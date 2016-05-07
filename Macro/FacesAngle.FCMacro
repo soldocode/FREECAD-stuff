@@ -1,0 +1,11 @@
+import math
+
+s1=Gui.Selection.getSelectionEx()[0].SubObjects[0]
+s2=Gui.Selection.getSelectionEx()[0].SubObjects[1]
+
+vns1 = s1.normalAt(0,0)
+vns2 = s2.normalAt(0,0)
+
+alpha = math.degrees( vns1.getAngle( vns2 ) )
+
+print 'angle between faces:',alpha

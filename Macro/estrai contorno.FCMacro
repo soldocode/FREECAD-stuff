@@ -1,0 +1,150 @@
+
+import FreeCADGui
+from FreeCAD import Base
+#from draftlibs import fcgeo
+
+toll=0.4
+
+
+def AppendVertex(node,node_list):
+    #index_node=FindVertex(node,node_list)
+
+    #controlla se il punto esiste
+    trovato=False
+    for indice in range (0,len(node_list)):
+      if abs(node_list[indice].x-node.x)<toll and abs(node_list[indice].y-node.y)<toll:
+      #if node_list[indice]==node :
+         #print 'findvertex - trovato ',indice
+         trovato=True
+         index_node=indice
+    if trovato==False :      #inserisce punto
+     node_list.insert(len(node_list),node)
+     index_node=len(node_list)-1
+    
+    print index_node,': ',node
+    geometry.append(index_node)   
+
+
+object_selected=Gui.Selection.getSelectionEx()
+edge_list=[]
+node_list=[]
+geometry_list=[]
+
+#ricava elenco punti e geometrie
+for selection in object_selected:
+ edge=selection.Object.Shape
+ edge_list.append(edge)
+
+ geo_type=type(edge.Curve)
+ print geo_type.__name__,": ",selection.ObjectName
+
+ geometry=[]
+ if geo_type.__name__=='GeomLineSegment':
+  geometry.append('Line')
+ if geo_type.__name__=='GeomCircle':
+  if len(edge.Vertexes)==1:
+   geometry.append('Circle')
+   node=edge.Curve.Center
+   AppendVertex(node,node_list)
+  if len(edge.Vertexes)==2:
+   geometry.append('Arc')
+
+ for node in edge.Vertexes:
+  AppendVertex(node.Point,node_list)
+
+ if geometry[0]=='Arc':
+  node=edge.valueAt(edge.Length/2)
+  AppendVertex(node,node_list)
+
+ geometry_list.append(geometry) 
+
+print geometry_list
+
+#crea catene
+chain_list=[]
+chain=[]
+geometry=geometry_list.pop()
+chain.append(geometry)
+point_link=geometry[2]
+
+while len(geometry_list)>0:
+  trovato=False
+  for elemento in geometry_list:
+   if trovato==False:
+    # print'confronto ',point_link,' tra ',elemento[1],' o',elemento[2]
+    if point_link==elemento[1]:
+     geo_link=elemento
+     geo_point=2
+     trovato=True
+    else:
+     if point_link==elemento[2]:
+       geo_link=elemento
+       geo_point=1
+       trovato=True
+
+  if trovato:
+    chain.append(geo_link)
+    point_link=geo_link[geo_point]
+    geometry_list.remove(geo_link)
+  else:
+    chain_list.append(chain)
+    chain=[]
+    if len(geometry_list)>0:
+       geometry=geometry_list.pop() 
+       chain.append(geometry)
+       point_link=geometry[2]
+
+if len(chain)>0:
+  chain_list.append(chain) 
+
+print 'Chain list:'    
+print chain_list
+     
+wlist=[]
+for chain in chain_list:
+ edge_list=[]
+ for geometry in chain:
+  geometry.reverse()
+  com_geo=geometry.pop()
+  p1=geometry.pop()
+  p2=geometry.pop()
+  if com_geo=='Line':
+   edge_list.append(Part.makeLine(node_list[p1],node_list[p2]))
+  if com_geo=='Arc':
+   p3=geometry.pop()
+   edge_list.append(Part.makeLine(node_list[p2],node_list[p1]))
+   #edge_list.append(Part.Arc(node_list[p1],node_list[p3],node_list[p2]).toShape())
+  if com_geo=='Circle':
+   pc=node_list[p1]
+   pr=node_list[p2]
+   raggio=Base.Vector(pc[0]-pr[0],pc[1]-pr[1],0).Length
+   edge_list.append(Part.makeCircle(raggio,Base.Vector(pc[0],pc[1],0),Base.Vector(0,0,1)))
+   
+
+ 
+ edge_list=Part.__sortEdges__(edge_list)
+ wire=Part.Wire(edge_list)
+ face=Part.Face(wire)
+ print 'Area:',face.Orientation
+ if len(wlist)>0 and wire.BoundBox.DiagonalLength>wlist[0].BoundBox.DiagonalLength:
+  wlist.insert(0,wire)
+ else:
+  wlist.append(wire)      
+
+
+print wlist
+#shape=Part.Shape(edge_list)
+#wire=Part.Wire(wlist)
+face=Part.Face(wlist)
+#if face.Area<0:
+ #wlist.reverse()
+ # wedge_list=fcgeo.sortEdges(edge_list)
+ # wire=Part.Wire(edge_list)
+ #face=Part.Face(wlist)
+Part.show(face)
+
+
+
+
+
+

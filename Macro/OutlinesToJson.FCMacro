@@ -1,0 +1,282 @@
+#### Soldini Riccardo - 07/12/14 ####
+# TO DO:
+#####################################
+
+import FreeCADGui, copy, json
+from FreeCAD import Base
+from math import pi,degrees,atan
+from PySide import QtGui,QtCore
+
+toll=2.5
+
+def AppendVertex(node,node_list):
+    
+    #Find vertex point
+    found_vertex=False
+    for indice in range (0,len(node_list)):
+        if abs(node_list[indice].x-node.x)<toll and abs(node_list[indice].y-node.y)<toll:
+            found_vertex=True
+            index_node=indice
+
+    #Insert point
+    if found_vertex==False :      
+        node_list.insert(len(node_list),node)
+        index_node=len(node_list)-1
+    
+    print index_node,': ',node
+    geometry.append(index_node)   
+
+def DeltaBetweenAngles(aStart,aEnd):
+    if aStart>aEnd:
+        delta=(180-aStart+aEnd) 
+    else:
+        delta=aEnd-aStart
+    return delta  
+
+ 
+def VectorDegreesXY(vec):
+    module=vec.Length
+    if vec.x==0:
+        if vec.y>=0:
+            angle=90
+        else:
+            angle=270
+ 
+
+    if vec.x>0:
+        if vec.y<0:
+            angle=degrees(2*pi+atan(vec.y/vec.x))
+        else:
+            angle=degrees(atan(vec.y/vec.x))
+
+    if vec.x<0:
+        angle=degrees(pi+atan(vec.y/vec.x))
+
+    return angle
+
+def AlignChain(chain):
+    if len(chain)>0:
+        chain1=chain[0]
+        cw=0
+        ccw=0
+        for indice in range (1,len(chain)-1):
+            nodes=[]
+            nodes.append(node_list[chain1[1]])
+            chain2=chain[indice]
+            nodes.append(node_list[chain2[1]])
+            nodes.append(node_list[chain2[2]])
+            #print 'triangolo: ',nodes
+            vectors=[]
+            vectors.append(Base.Vector(nodes[1].x-nodes[0].x,nodes[1].y-nodes[0].y,0))
+            vectors.append(Base.Vector(nodes[2].x-nodes[1].x,nodes[2].y-nodes[1].y,0))
+            vectors.append(Base.Vector(nodes[0].x-nodes[2].x,nodes[0].y-nodes[2].y,0))
+            #print vectors
+            angles=[]
+            angles.append(VectorDegreesXY(vectors[0]))
+            angles.append(VectorDegreesXY(vectors[1]))
+            angles.append(VectorDegreesXY(vectors[2]))
+            delta_angle=[]
+            delta_angle.append(DeltaBetweenAngles(angles[0],angles[1]))
+            delta_angle.append(DeltaBetweenAngles(angles[1],angles[2]))
+            delta_angle.append(DeltaBetweenAngles(angles[2],angles[0]))
+            direction=(270-delta_angle[0]-delta_angle[1]-delta_angle[2])/-90
+            print 'direzione triangolo: ',direction
+            if direction>0:
+                cw=cw+1
+            else:
+                ccw=ccw+1            
+
+        if cw>ccw:
+            print 'cw'
+            revchain=[]
+            while len(chain)>0:
+                node=chain.pop()
+                revpoint=node[1]
+                node[1]=node[2]
+                node[2]=revpoint
+                revchain.append(node)
+            chain=revchain
+        else:
+            print 'ccw'     
+
+    return chain 
+
+  
+def ChainToWire(chain):
+    edge_list=[]
+    for geometry in chain:
+        geometry.reverse()
+        com_geo=geometry.pop()
+        p1=geometry.pop()
+        p2=geometry.pop()
+        if com_geo=='Line':
+            edge_list.append(Part.makeLine(node_list[p1],node_list[p2]))
+        elif com_geo=='Arc':
+            p3=geometry.pop()
+            edge_list.append(Part.Arc(node_list[p1],node_list[p3],node_list[p2]).toShape())
+        elif com_geo=='Circle':
+            pc=node_list[p1]
+            pr=node_list[p2]
+            raggio=Base.Vector(pr[0]-pc[0],pr[1]-pc[1],0).Length
+            edge_list.append(Part.makeCircle(raggio,Base.Vector(pc[0],pc[1],0),Base.Vector(0,0,1)))
+   
+
+    edge_list=Part.__sortEdges__(edge_list)
+    return Part.Wire(edge_list) 
+
+##########################################################################################
+
+object_selected=Gui.Selection.getSelectionEx()
+edge_list=[]
+node_list=[]
+geometry_list=[]
+
+
+####Extract vertex list and geometric primitive####
+
+for selection in object_selected:
+    shape_edges=selection.Object.Shape.Edges 
+    edge=shape_edges.pop()
+    edge_list.append(edge)
+
+    geo_type=type(edge.Curve)
+    print geo_type.__name__,": ",selection.ObjectName
+
+    geometry=[]
+    if geo_type.__name__=='GeomLineSegment':
+        geometry.append('Line')
+    if geo_type.__name__=='GeomCircle':
+        if len(edge.Vertexes)==1:
+            geometry.append('Circle')
+            node=edge.Curve.Center
+            AppendVertex(node,node_list)
+        if len(edge.Vertexes)==2:
+            geometry.append('Arc')
+
+    for node in edge.Vertexes:
+        AppendVertex(node.Point,node_list)
+
+    if geometry[0]=='Arc':
+        node=edge.valueAt(edge.Length/2)
+        AppendVertex(node,node_list)
+
+    geometry_list.append(geometry) 
+
+
+print 'geometry list:',geometry_list
+
+
+
+#### Chain Creation ####
+
+chain_list=[]
+chain=[]
+geometry=geometry_list.pop()
+chain.append(geometry)
+point_link=geometry[2]
+
+while len(geometry_list)>0:
+    found=False
+    
+    for elemento in geometry_list:
+        if not found:
+
+            # Find a common node
+            if point_link==elemento[1]:
+                geo_link=elemento
+                geo_point=2
+                found=True
+            else:
+                if point_link==elemento[2]:
+                    invert=elemento[1]
+                    elemento[1]=elemento[2]
+                    elemento[2]=invert
+                    geo_link=elemento
+                    geo_point=2
+                    found=True
+
+    if found:
+        chain.append(geo_link)
+        point_link=geo_link[geo_point]
+        geometry_list.remove(geo_link)
+    else:
+        print chain
+        chain=AlignChain(chain)
+        chain_list.append(chain)
+        chain=[]
+        if len(geometry_list)>0:
+            geometry=geometry_list.pop() 
+            chain.append(geometry)
+            point_link=geometry[2]
+
+
+if len(chain)>0:
+    #Align chain direction
+    chain=AlignChain(chain)
+    chain_list.append(chain) 
+
+
+print 'Chain list:',chain_list
+
+
+
+#### Create FreeCAD wire primitive and sort chain_list ####
+
+sorted_chain_list=[]
+wire_list=[]
+for chain in chain_list:
+    print 'chain:',chain
+    wire=ChainToWire(copy.deepcopy(chain))
+    
+    if len(wire_list)>0 and wire.BoundBox.DiagonalLength>wire_list[0].BoundBox.DiagonalLength:
+        wire_list.insert(0,wire)
+        sorted_chain_list.insert(0,chain)
+        print 'maggiore'
+    else:
+        wire_list.append(wire) 
+        sorted_chain_list.append(chain)     
+
+print 'Chain list sorted:'
+print sorted_chain_list
+chain_list=sorted_chain_list
+
+
+#### Create FreeCAD Object ####
+face=Part.Face(wire_list)
+shape=face.extrude(Base.Vector(0,0,10))
+newArt=FreeCAD.newDocument()
+newArt.Label='Nuovo Articolo'
+FreeCADGui.ActiveDocument=newArt
+FreeCADGui.activeDocument().activeView().viewTop()
+Part.show(shape)
+FreeCADGui.SendMsgToActiveView("ViewFit")
+
+
+#### Create Json Object ####
+jsonNodes=[]
+for node in node_list:
+    jsonNodes.append({'X':node.x,'Y':node.y})
+
+jsonFileName = QtGui.QFileDialog.getSaveFileName()
+meWorkFlow=[{"WorkClass":'taglio_plasma',
+             "Id":'',
+             "Nodes":jsonNodes,
+             "Chain":chain_list,
+             "BoundBox":{"Xmin":shape.BoundBox.XMin,
+                         "Ymin":shape.BoundBox.YMin,
+                         "Xmax":shape.BoundBox.XMax,
+                         "Ymax":shape.BoundBox.YMax}
+            }
+           ]               
+meItem={"py/object": "makEasy.Item",
+        "Weight": 0,
+        "Title": "",
+        "Material": {"Id": "101","Thickness": "10"},
+        "WorkFlow": meWorkFlow
+        }
+
+filecontent=json.dumps(meItem, sort_keys=True, indent=4)
+print filecontent
+jsonFile=open(jsonFileName, 'w')
+jsonFile.write(filecontent)
+jsonFile.close()

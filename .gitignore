@@ -45,3 +45,10 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+Macro/dxfColorMap.py
+Macro/dxfColorMap.pyc
+Macro/dxfImportObjects.py
+Macro/dxfImportObjects.pyc
+Macro/dxfLibrary.py
+*.pyc
+Macro/dxfReader.py
