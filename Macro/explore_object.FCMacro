@@ -1,0 +1,5 @@
+sel=Gui.Selection.getSelectionEx()[0]
+for face in sel.Object.Shape.Faces:
+    print face.Surface
+    print face.normalAt(0,0)
+
