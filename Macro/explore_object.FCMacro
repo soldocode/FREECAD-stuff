@@ -1,5 +1,34 @@
 sel=Gui.Selection.getSelectionEx()[0]
-for face in sel.Object.Shape.Faces:
-    print face.Surface
-    print face.normalAt(0,0)
+cSurf=[]
 
+fnum=len(sel.Object.ViewObject.DiffuseColor)
+actcolor=sel.Object.ViewObject.DiffuseColor[0]
+dcol=[]
+for i in range (0,fnum):
+    dcol.append(actcolor)
+
+
+	
+faces=sel.Object.Shape.Faces
+for i in range(0,len(faces)):
+    if faces[i].Surface.__str__()=="<Cylinder object>":
+        print faces[i].Surface,"  center:",faces[i].Surface.Center
+        cSurf.append({"index":i,"face":faces[i]})	
+
+
+while len(cSurf)>1:
+    blend=cSurf.pop()
+    not_found=True
+    ind=0
+    while ind<len(cSurf):
+       c1=blend["face"].Surface.Center
+       c2=cSurf[ind]["face"].Surface.Center
+       thickness=blend["face"].Surface.Radius-cSurf[ind]["face"].Surface.Radius
+       if (c1.x==c2.x) and (c1.y==c2.y) and (c1.z==c2.z)and (thickness!=0):
+       	  print 'Face',blend["index"]+1,' with Face',cSurf[ind]["index"]+1,' thickness:',thickness
+          dcol[cSurf[ind]["index"]]=(1.,0.,1.)
+          dcol[blend["index"]]=(1.,0.,1.)
+       ind=ind+1
+
+
+sel.Object.ViewObject.DiffuseColor=dcol
