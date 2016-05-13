@@ -1,15 +1,19 @@
 sel=Gui.Selection.getSelectionEx()[0]
 cSurf=[]
 
-fnum=len(sel.Object.ViewObject.DiffuseColor)
+	
+faces=sel.Object.Shape.Faces
+
+fnum=len(faces)
+print 'fnum:',fnum
 actcolor=sel.Object.ViewObject.DiffuseColor[0]
 dcol=[]
 for i in range (0,fnum):
     dcol.append(actcolor)
 
 
-	
-faces=sel.Object.Shape.Faces
+
+
 for i in range(0,len(faces)):
     if faces[i].Surface.__str__()=="<Cylinder object>":
         print faces[i].Surface,"  center:",faces[i].Surface.Center
