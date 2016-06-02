@@ -1,0 +1,24 @@
+import math
+import FreeCAD
+import Part
+
+s1=Gui.Selection.getSelectionEx()[0]
+
+
+vns1 = s1.SubObjects[0].normalAt(0,0)
+vns1.Length=150
+line=Part.Line(FreeCAD.Vector(0,0,0),vns1)
+sh=line.toShape()
+Part.show(sh)
+
+rot=FreeCAD.Placement()
+#rot.Rotation=(-vns1.x,-vns1.y,-vns1.z,1)
+
+
+print 'vect:',vns1
+
+print 'placement',s1.Object.Placement
+
+#s1.Object.Placement=rot
+
+#print 'placement',s1.Object.Placement
