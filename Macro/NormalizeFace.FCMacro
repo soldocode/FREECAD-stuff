@@ -1,24 +1,18 @@
 import math
-import FreeCAD
-import Part
-
-s1=Gui.Selection.getSelectionEx()[0]
+import FreeCAD as FC
 
 
-vns1 = s1.SubObjects[0].normalAt(0,0)
-vns1.Length=150
-line=Part.Line(FreeCAD.Vector(0,0,0),vns1)
-sh=line.toShape()
-Part.show(sh)
+sel=Gui.Selection.getSelectionEx()[0]
+face=sel.SubObjects[0]
+obj=sel.Object
 
-rot=FreeCAD.Placement()
-#rot.Rotation=(-vns1.x,-vns1.y,-vns1.z,1)
+vns1 = face.normalAt(0,0)
+print 'Face Normal Vect: ',vns1.normalize()
+zdeg=vns1.getAngle(FC.Vector(0,0,1))
+print 'Rotation degree to Z plane: ',math.degrees(zdeg) 
 
 
-print 'vect:',vns1
-
-print 'placement',s1.Object.Placement
-
-#s1.Object.Placement=rot
-
-#print 'placement',s1.Object.Placement
+rAxis=FC.Rotation(FC.Vector(0,0,1),vns1.normalize()).Axis
+rDegree=-math.degrees(zdeg)
+rCenter=obj.Shape.CenterOfMass
+obj.Placement=FC.Placement(FC.Vector(0,0,0),FC.Rotation(rAxis,rDegree),rCenter).multiply(obj.Placement)

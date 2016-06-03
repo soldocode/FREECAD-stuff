@@ -28,7 +28,9 @@ while len(cSurf)>1:
        c1=blend["face"].Surface.Center
        c2=cSurf[ind]["face"].Surface.Center
        thickness=blend["face"].Surface.Radius-cSurf[ind]["face"].Surface.Radius
-       if (c1.x==c2.x) and (c1.y==c2.y) and (c1.z==c2.z)and (thickness!=0):
+
+       equal_center=(round(c1.x, 2)==round(c2.x, 2)) and (round(c1.y, 2)==round(c2.y, 2)) and (round(c1.z, 2)==round(c2.z, 2))
+       if (equal_center) and (thickness!=0):
        	  print 'Face',blend["index"]+1,' with Face',cSurf[ind]["index"]+1,' thickness:',thickness
           dcol[cSurf[ind]["index"]]=(1.,0.,1.)
           dcol[blend["index"]]=(1.,0.,1.)
