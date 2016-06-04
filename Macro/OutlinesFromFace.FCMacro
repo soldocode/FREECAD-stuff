@@ -1,0 +1,4 @@
+sel=Gui.Selection.getSelectionEx()[0]
+face=sel.SubObjects[0]
+edges=face.Edges
+for edge in edges: print edge.Curve
