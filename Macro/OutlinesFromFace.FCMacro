@@ -1,4 +1,73 @@
+#### Soldini Riccardo - 2016 ####
+#### Last Update: 05-06-2016 ####
+
+
+def indexNode(x,y):
+    i=0
+    notfound=True
+    while (notfound) and i<len(nodes):
+        if (x==nodes[i][0]) and (y==nodes[i][1]):
+            notfound=False
+            i=i-1
+        i=i+1
+    
+    if notfound: nodes.append([x,y])
+
+    return i
+
+
+def createPath(path,node,geos):
+    while len(geos)>0:
+        geo=geos.pop()
+        if (geo[1]==node):
+            path.append(geo)
+            createPath(path,geo[2],geos)
+        elif (geo[2]==node):
+            path.append(geo)
+            createPath(path,geo[1],geos)
+ 
+    return dict(path=path,node=node,geos=geos)
+
+
 sel=Gui.Selection.getSelectionEx()[0]
 face=sel.SubObjects[0]
 edges=face.Edges
-for edge in edges: print edge.Curve
+nodes=[]
+paths=[]
+geos=[]
+
+
+for edge in edges: 
+    type_edge=type(edge.Curve).__name__
+    vertexes=edge.Vertexes
+    if type_edge=='GeomLineSegment': 
+        txt='line'
+        n1=indexNode(vertexes[0].X,vertexes[0].Y)
+        n2=indexNode(vertexes[1].X,vertexes[1].Y)
+        geos.append(['line',n1,n2])
+    if type_edge=='GeomCircle':
+        if len(edge.Vertexes)==1: 
+            txt='circle'
+            n1=indexNode(edge.Curve.Center.x,edge.Curve.Center.y)
+            n2=indexNode(vertexes[0].X,vertexes[0].Y)
+            geos.append(['circle',n1,n2])
+        if len(edge.Vertexes)==2:
+            txt='arc'
+            n1=indexNode(vertexes[0].X,vertexes[0].Y)
+            n2=indexNode(vertexes[1].X,vertexes[1].Y)
+            mdldgr=edge.ParameterRange[0]+(edge.ParameterRange[1]-edge.ParameterRange[0])/2
+            middle=edge.valueAt(mdldgr)
+            n3=indexNode(middle.x,middle.y)
+            geos.append(['arc',n1,n2,n3]) 
+
+for g in geos: print g
+
+#while len(geos)>0:
+#    path=[]
+#    geo=geos.pop()
+#    if geo[0]=='circle': path.append(geo)
+#    else:
+#        while len(geos)>0:
+            
+        
+
