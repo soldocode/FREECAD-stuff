@@ -1,0 +1,3 @@
+import FreeCAD
+App.ActiveDocument.addObject("App::DocumentObjectGroup","Gruppo")
+
