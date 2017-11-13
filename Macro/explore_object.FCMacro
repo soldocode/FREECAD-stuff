@@ -1,11 +1,11 @@
 sel=Gui.Selection.getSelectionEx()[0]
 cSurf=[]
-
+p_surf=[]
 	
 faces=sel.Object.Shape.Faces
 
 fnum=len(faces)
-print 'fnum:',fnum
+print ('faces number:',fnum)
 actcolor=sel.Object.ViewObject.DiffuseColor[0]
 dcol=[]
 for i in range (0,fnum):
@@ -16,8 +16,10 @@ for i in range (0,fnum):
 
 for i in range(0,len(faces)):
     if faces[i].Surface.__str__()=="<Cylinder object>":
-        print faces[i].Surface,"  center:",faces[i].Surface.Center
-        cSurf.append({"index":i,"face":faces[i]})	
+        print ("Face",i," - center:",faces[i].Surface.Center)
+        cSurf.append({"index":i,"face":faces[i]})
+    else:
+        p_surf.append({"index":i,"face":faces[i]})	
 
 
 while len(cSurf)>1:
@@ -32,6 +34,19 @@ while len(cSurf)>1:
        equal_center=(round(c1.x, 2)==round(c2.x, 2)) and (round(c1.y, 2)==round(c2.y, 2)) and (round(c1.z, 2)==round(c2.z, 2))
        if (equal_center) and (thickness!=0):
        	  print 'Face',blend["index"]+1,' with Face',cSurf[ind]["index"]+1,' thickness:',thickness
+
+          # find faces adjacent
+          edges=blend["face"].Edges
+          for e in edges:
+            print('edges: ',e.Curve.__class__.__name__)
+            if e.Curve.__class__.__name__=='GeomLineSegment':
+               e_link=e
+               for psi in p_surf:             
+                   for pse in psi["face"].Edges:
+                       if pse==e_link:
+						   print('Found linked Surface')     
+
+
           dcol[cSurf[ind]["index"]]=(1.,0.,1.)
           dcol[blend["index"]]=(1.,0.,1.)
        ind=ind+1

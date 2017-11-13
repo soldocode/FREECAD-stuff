@@ -1,0 +1,9 @@
+# Macro Begin: C:\SOLDINISNC\FREECAD\Macro\crea disegno.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
+import FreeCAD
+import Drawing
+
+App.activeDocument().addObject('Drawing::FeaturePage','Page001')
+App.activeDocument().Page001.Template = 'C:/Program Files/FreeCAD 0.15/data/Mod/Drawing/Templates/A3_Landscape.svg'
+App.activeDocument().recompute()
+Gui.activeDocument().getObject('Page001').show()
+# Macro End: C:\SOLDINISNC\FREECAD\Macro\crea disegno.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++
