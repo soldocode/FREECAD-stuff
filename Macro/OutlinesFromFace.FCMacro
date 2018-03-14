@@ -1,7 +1,6 @@
 #### Soldini Riccardo - 2016 ####
 #### Last Update: 05-06-2016 ####
 
-
 def indexNode(x,y):
     i=0
     notfound=True
@@ -15,7 +14,6 @@ def indexNode(x,y):
 
     return i
 
-
 def createPath(path,node,geos):
     while len(geos)>0:
         geo=geos.pop()
@@ -28,14 +26,12 @@ def createPath(path,node,geos):
  
     return dict(path=path,node=node,geos=geos)
 
-
 sel=Gui.Selection.getSelectionEx()[0]
 face=sel.SubObjects[0]
 edges=face.Edges
 nodes=[]
 paths=[]
 geos=[]
-
 
 for edge in edges: 
     type_edge=type(edge.Curve).__name__
@@ -67,7 +63,4 @@ for g in geos: print g
 #    geo=geos.pop()
 #    if geo[0]=='circle': path.append(geo)
 #    else:
-#        while len(geos)>0:
-            
-        
-
+#        while len(geos)>0:        

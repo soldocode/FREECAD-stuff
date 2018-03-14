@@ -1,0 +1,80 @@
+########################################################################
+#                                                                      #
+#  Riccardo Soldini - riccardo.soldini@gmail.com                       #
+#                                                                      #
+#  reversE.py - 2017                                                   #
+#                                                                      #
+#  Modulo per la decostruzione di parti di carpenteria da file STEP    #
+#  e generazione del processo di costruzione                           #
+#                                                                      #
+########################################################################
+
+
+
+sel=Gui.Selection.getSelectionEx()[0]
+faces=sel.Object.Shape.Faces
+
+c_surf={}
+p_surf={}
+b_part=[]	
+
+fnum=len(faces)
+print ('Number of faces:',fnum)
+
+### create color tree
+actcolor=sel.Object.ViewObject.DiffuseColor[0]
+dcol=[]
+for i in range (0,fnum):
+    dcol.append(actcolor)
+
+### Build the circular and flat faces's tree
+for i in range(0,len(faces)):
+    if faces[i].Surface.__str__()=="<Cylinder object>":
+        print ("Face",i," - center:",faces[i].Surface.Center)
+        c_surf[i]=faces[i]
+    else:
+        p_surf[i]=faces[i]	
+
+
+c_list=[]
+for i in c_surf: 
+	c_list.append(i)
+
+while len(c_list)>1:
+    blend=c_list.pop()
+    not_found=True
+    ind=0
+    while ind<len(c_list) and not_found:
+       c1=faces[blend]
+       c2=faces[c_list[ind]]
+       thickness=c1.Surface.Radius-c2.Surface.Radius
+
+       cc1=c1.Surface.Center
+       cc2=c2.Surface.Center 
+       equal_center=(round(cc1.x, 2)==round(cc2.x, 2)) and (round(cc1.y, 2)==round(cc2.y, 2)) and (round(cc1.z, 2)==round(cc2.z, 2))
+       if (equal_center) and (thickness!=0):
+       	  print 'Face',blend,' with Face',c_list[ind],' thickness:',thickness
+
+          dcol[c_list[ind]]=(1.,0.,1.)
+          dcol[blend]=(1.,0.,1.)
+
+          # save in blend part
+          b_part.append(dict(radius1=blend,radius2=c_list[ind]))
+          not_found=False
+          del c_list[ind]
+
+          # find faces adjacent
+          #edges=blend["face"].Edges
+          #for e in edges:
+          #  print('edges: ',e.Curve.__class__.__name__)
+          #  if e.Curve.__class__.__name__=='GeomLineSegment':
+          #     e_link=e
+          #     for psi in p_surf:             
+          #         for pse in psi["face"].Edges:
+          #             if pse==e_link:
+		  #			   print('Found linked Surface')     
+
+       ind=ind+1
+
+sel.Object.ViewObject.DiffuseColor=dcol
+print b_part
