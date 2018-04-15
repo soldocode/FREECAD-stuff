@@ -29,13 +29,15 @@ for i in range (0,fnum):
 
 ### Build the circular and flat faces's tree
 for i in range(0,len(faces)):
-    if faces[i].Surface.__str__()=="<Cylinder object>":
-        print ("Face",i," - center:",faces[i].Surface.Center)
+    str_face=faces[i].Surface.__str__()
+    if str_face=="<Cylinder object>":
+        print ("Cylinder",i," - center:",faces[i].Surface.Center)
         c_surf[i]=faces[i]
-    else:
+    elif str_face=="<Plane object>":
+        print ("Plane",i," - number of edges:",len(faces[i].Edges))
         p_surf[i]=faces[i]	
 
-
+	
 c_list=[]
 for i in c_surf: 
 	c_list.append(i)
