@@ -10,6 +10,8 @@
 ########################################################################
 
 
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 sel=Gui.Selection.getSelectionEx()[0]
 faces=sel.Object.Shape.Faces
@@ -17,6 +19,9 @@ faces=sel.Object.Shape.Faces
 c_surf={}
 p_surf={}
 b_part=[]	
+faces_tree={"Plane":{},
+            "Cylinder":{},
+            "Cone":{}}
 
 fnum=len(faces)
 print ('Number of faces:',fnum)
@@ -27,16 +32,27 @@ dcol=[]
 for i in range (0,fnum):
     dcol.append(actcolor)
 
-### Build the circular and flat faces's tree
+### Build faces's tree
 for i in range(0,len(faces)):
     str_face=faces[i].Surface.__str__()
     if str_face=="<Cylinder object>":
         print ("Cylinder",i," - center:",faces[i].Surface.Center)
         c_surf[i]=faces[i]
+        faces_tree['Cylinder'][i]=faces[i]
     elif str_face=="<Plane object>":
         print ("Plane",i," - number of edges:",len(faces[i].Edges))
         p_surf[i]=faces[i]	
+        faces_tree['Plane'][i]=faces[i]
+    elif str_face=="<Cone object>":
+        print ("Cone",i," - center",faces[i].Surface.Center)
+        faces_tree['Cone'][i]=faces[i]
 
+pp.pprint(faces_tree)    
+
+planes= dict(faces_tree['Plane'])
+for i in planes:
+    x_axis=abs(planes[i].Surface.Axis.x)
+    print (x_axis)
 	
 c_list=[]
 for i in c_surf: 
