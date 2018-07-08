@@ -1,5 +1,17 @@
 #### Soldini Riccardo - 2016 ####
-#### Last Update: 05-06-2016 ####
+#### Last Update: 08-07-2018 ####
+
+import sys
+sys.path.append(u"\PyApp\mystuff")
+sys.path.append(u"\PyApp\makEasy")
+sys.path.append(u"C:\\Users\\Disegno\\Anaconda3\\lib\\site-packages")
+ 
+ 
+import makEasy
+import g2
+
+pth=g2.Path()
+
 
 def indexNode(x,y):
     i=0
@@ -56,11 +68,6 @@ for edge in edges:
             n3=indexNode(middle.x,middle.y)
             geos.append(['arc',n1,n2,n3]) 
 
-for g in geos: print g
+for g in geos: print (g)
 
-#while len(geos)>0:
-#    path=[]
-#    geo=geos.pop()
-#    if geo[0]=='circle': path.append(geo)
-#    else:
-#        while len(geos)>0:        
+       
