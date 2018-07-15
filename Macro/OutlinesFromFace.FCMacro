@@ -10,8 +10,6 @@ sys.path.append(u"C:\\Users\\Disegno\\Anaconda3\\lib\\site-packages")
 import makEasy
 import g2
 
-pth=g2.Path()
-
 
 def indexNode(x,y):
     i=0
@@ -22,7 +20,9 @@ def indexNode(x,y):
             i=i-1
         i=i+1
     
-    if notfound: nodes.append([x,y])
+    if notfound: 
+        nodes.append([x,y])
+        all_nodes.append(g2.Point(x,y))
 
     return i
 
@@ -44,30 +44,84 @@ edges=face.Edges
 nodes=[]
 paths=[]
 geos=[]
+all_nodes=[]
+all_geos=[]
+chains=[]
 
 for edge in edges: 
+    ind_nd=0
     type_edge=type(edge.Curve).__name__
     vertexes=edge.Vertexes
     if type_edge=='GeomLineSegment': 
         txt='line'
         n1=indexNode(vertexes[0].X,vertexes[0].Y)
         n2=indexNode(vertexes[1].X,vertexes[1].Y)
-        geos.append(['line',n1,n2])
+        geos.append(['Line',n1,n2])
     if type_edge=='GeomCircle':
         if len(edge.Vertexes)==1: 
             txt='circle'
             n1=indexNode(edge.Curve.Center.x,edge.Curve.Center.y)
             n2=indexNode(vertexes[0].X,vertexes[0].Y)
-            geos.append(['circle',n1,n2])
+            geos.append(['Circle',n1,n2])
         if len(edge.Vertexes)==2:
             txt='arc'
             n1=indexNode(vertexes[0].X,vertexes[0].Y)
-            n2=indexNode(vertexes[1].X,vertexes[1].Y)
+            n3=indexNode(vertexes[1].X,vertexes[1].Y)
             mdldgr=edge.ParameterRange[0]+(edge.ParameterRange[1]-edge.ParameterRange[0])/2
             middle=edge.valueAt(mdldgr)
-            n3=indexNode(middle.x,middle.y)
-            geos.append(['arc',n1,n2,n3]) 
+            n2=indexNode(middle.x,middle.y)
+            geos.append(['Arc',n1,n2,n3]) 
 
-for g in geos: print (g)
+while len(geos)>0:
+    empty_search=False
+    trovato=False
 
-       
+    act=geos.pop()
+    chain=[act]
+    #print (act)
+    while not empty_search:
+        i=0
+        empty_search=True
+        while i<len(geos):
+            #print(i)
+            #print(empty_search)
+            if act[1]==geos[i][1]:
+                trovato=True
+            if act[1]==geos[i][-1]:
+                trovato=True
+            if act[-1]==geos[i][1]:
+                trovato=True
+            if act[-1]==geos[i][-1]:
+                trovato=True
+            if trovato:
+                empty_search=False
+                act=geos[i]
+                #print (act)
+                chain.append(geos[i])
+                geos.pop(i)
+                trovato=False
+            else:
+                i=i+1
+    chains.append(chain)
+
+print ('Ho trovato nr',len(chains),' catene')
+for c in chains:
+   pth=g2.Path()
+   for g in c:
+       p1=g2.Point(0,0)
+       p2=g2.Point(3,5)
+       if g[0]=='Arc':
+           p3=g2.Point(4,6)
+           pth.insertGeo('Line',[p1,p2,p3])#?????
+       else:
+           pth.insertGeo('Line',[p1,p2])#?????
+   print pth      
+
+
+
+# nd_ext=[Point(0,0),Point(radius_est,0.0)]
+#    nd_int=[Point(0,0),Point(radius_int,0.0)]
+#    path=[0,'Circle',1]
+#    p_ext=Path(nd_ext,path)
+#    p_int=Path(nd_int,path)
+#    shape=Shape(p_ext,[p_int])     
