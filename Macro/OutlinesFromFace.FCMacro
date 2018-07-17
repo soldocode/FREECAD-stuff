@@ -2,6 +2,9 @@
 #### Last Update: 08-07-2018 ####
 
 import sys
+sys.path.append(u"C:\SOLDINISNC\PyApp\mystuff")
+sys.path.append(u"C:\SOLDINISNC\PyApp\makEasy")
+sys.path.append(u"C:\\Users\\UFFICIO TECNICO\\Anaconda3\\lib\\site-packages")
 sys.path.append(u"\PyApp\mystuff")
 sys.path.append(u"\PyApp\makEasy")
 sys.path.append(u"C:\\Users\\Disegno\\Anaconda3\\lib\\site-packages")
@@ -72,32 +75,44 @@ for edge in edges:
             n2=indexNode(middle.x,middle.y)
             geos.append(['Arc',n1,n2,n3]) 
 
+
 while len(geos)>0:
     empty_search=False
     trovato=False
 
     act=geos.pop()
-    chain=[act]
+    chain=[act[1],act[0]]
+    if act[0]=='Arc': 
+       chain.append(act[2])
+    chain.append(act[-1])
+    node_to_find=act[-1]
+
     #print (act)
     while not empty_search:
         i=0
         empty_search=True
         while i<len(geos):
-            #print(i)
-            #print(empty_search)
-            if act[1]==geos[i][1]:
+            print(i)
+            print(empty_search)
+            if geos[i][1]==node_to_find:
                 trovato=True
-            if act[1]==geos[i][-1]:
+                chain.append(geos[i][0])
+                if geos[i][0]=='Arc': 
+                    chain.append(geos[i][2])
+                chain.append(geos[i][-1])
+                node_to_find=geos[i][-1]
+            elif geos[i][-1]==node_to_find:
                 trovato=True
-            if act[-1]==geos[i][1]:
-                trovato=True
-            if act[-1]==geos[i][-1]:
-                trovato=True
+                chain.append(geos[i][0])
+                if geos[i][0]=='Arc': 
+                    chain.append(geos[i][2])
+                chain.append(geos[i][1])
+                node_to_find=geos[i][1]
             if trovato:
                 empty_search=False
                 act=geos[i]
                 #print (act)
-                chain.append(geos[i])
+                #chain.append(geos[i])
                 geos.pop(i)
                 trovato=False
             else:
@@ -105,23 +120,22 @@ while len(geos)>0:
     chains.append(chain)
 
 print ('Ho trovato nr',len(chains),' catene')
+
+dr=g2.Drawing()
+
+p_int=[]
+conta=0
 for c in chains:
-   pth=g2.Path()
-   for g in c:
-       p1=g2.Point(0,0)
-       p2=g2.Point(3,5)
-       if g[0]=='Arc':
-           p3=g2.Point(4,6)
-           pth.insertGeo('Line',[p1,p2,p3])#?????
-       else:
-           pth.insertGeo('Line',[p1,p2])#?????
-   print pth      
+    print(c)
+    path=g2.Path(all_nodes,c)
+    for i in range(0,len(path.geometries)):
+        g=path.geo(i)   
+        print(g)
+        dr.insertGeo(conta,g)
+        conta+=1
 
-
-
-# nd_ext=[Point(0,0),Point(radius_est,0.0)]
-#    nd_int=[Point(0,0),Point(radius_int,0.0)]
-#    path=[0,'Circle',1]
-#    p_ext=Path(nd_ext,path)
-#    p_int=Path(nd_int,path)
-#    shape=Shape(p_ext,[p_int])     
+output_dxf=dr.getDXF()
+f=open("C:/Users/UFFICIO TECNICO/Desktop/prova.DXF","w")
+f.write(output_dxf)
+f.close()
+   
