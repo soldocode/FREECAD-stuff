@@ -1,5 +1,5 @@
 #### Soldini Riccardo - 2016 ####
-#### Last Update: 08-07-2018 ####
+#### Last Update: 31-07-2018 ####
 
 import sys
 sys.path.append(u"C:\SOLDINISNC\PyApp\mystuff")
@@ -12,6 +12,9 @@ sys.path.append(u"C:\\Users\\Disegno\\Anaconda3\\lib\\site-packages")
  
 import makEasy
 import g2
+import math
+import FreeCAD as FC
+from PySide import QtGui
 
 
 def indexNode(x,y):
@@ -41,8 +44,27 @@ def createPath(path,node,geos):
  
     return dict(path=path,node=node,geos=geos)
 
+
+# create a copy of the selected face
 sel=Gui.Selection.getSelectionEx()[0]
 face=sel.SubObjects[0]
+copy_face = Part.Face(face.Wires)
+face=copy_face
+
+
+# align face on Z plane
+vns1 = face.normalAt(0.0,0.0)
+print 'Face Normal Vect: ',vns1.normalize()
+zdeg=vns1.getAngle(FC.Vector(0.0,0.0,1.0))
+print 'Rotation degree to Z plane: ',math.degrees(zdeg) 
+
+rAxis=FC.Rotation(FC.Vector(0.0,0.0,1.0),vns1.normalize()).Axis
+rDegree=-math.degrees(zdeg)
+rCenter=face.CenterOfMass
+face.Placement=FC.Placement(FC.Vector(0.0,0.0,0.0),FC.Rotation(rAxis,rDegree),rCenter).multiply(face.Placement)
+
+
+# find all paths
 edges=face.Edges
 nodes=[]
 paths=[]
@@ -87,7 +109,6 @@ while len(geos)>0:
     chain.append(act[-1])
     node_to_find=act[-1]
 
-    #print (act)
     while not empty_search:
         i=0
         empty_search=True
@@ -111,8 +132,6 @@ while len(geos)>0:
             if trovato:
                 empty_search=False
                 act=geos[i]
-                #print (act)
-                #chain.append(geos[i])
                 geos.pop(i)
                 trovato=False
             else:
@@ -121,6 +140,8 @@ while len(geos)>0:
 
 print ('Ho trovato nr',len(chains),' catene')
 
+
+### create a drawing
 dr=g2.Drawing()
 
 p_int=[]
@@ -135,7 +156,8 @@ for c in chains:
         conta+=1
 
 output_dxf=dr.getDXF()
-f=open("C:/Users/UFFICIO TECNICO/Desktop/prova.DXF","w")
+filename=QtGui.QFileDialog.getSaveFileName(None,"Salva DXF", "", ".DXF")
+f=open(filename[0],"w")
 f.write(output_dxf)
 f.close()
    
