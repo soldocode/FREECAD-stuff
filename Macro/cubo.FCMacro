@@ -5,6 +5,8 @@ import FreeCAD
 import Sketcher
 import PartDesign
 import Import
+import PySide
+
 
 App.newDocument("Senza nome")
 #App.setActiveDocument("Senza_nome1")
@@ -55,7 +57,12 @@ App.ActiveDocument.recompute()
 #Gui.activeDocument().resetEdit()
 __objs__=[]
 __objs__.append(FreeCAD.getDocument("Senza_nome1").getObject("Pad"))
-Import.export(__objs__,u"C:/Users/UFFICIO TECNICO/Desktop/piastra.step")
+
+
+fname= PySide.QtGui.QFileDialog.getSaveFileName()                   
+print(fname)
+
+Import.export(__objs__,fname[0])
 
 del __objs__
 # Macro End: C:\SOLDINISNC\FREECAD\Macro\cubo.FCMacro +++++++++++++++++++++++++++++++++++++++++++++++++

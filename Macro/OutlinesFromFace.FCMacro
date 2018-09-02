@@ -48,8 +48,9 @@ def createPath(path,node,geos):
 # create a copy of the selected face
 sel=Gui.Selection.getSelectionEx()[0]
 face=sel.SubObjects[0]
+obj=sel.Object
 copy_face = Part.Face(face.Wires)
-face=copy_face
+#face=copy_face
 
 
 # align face on Z plane
@@ -61,6 +62,7 @@ print 'Rotation degree to Z plane: ',math.degrees(zdeg)
 rAxis=FC.Rotation(FC.Vector(0.0,0.0,1.0),vns1.normalize()).Axis
 rDegree=-math.degrees(zdeg)
 rCenter=face.CenterOfMass
+face=copy_face
 face.Placement=FC.Placement(FC.Vector(0.0,0.0,0.0),FC.Rotation(rAxis,rDegree),rCenter).multiply(face.Placement)
 
 
