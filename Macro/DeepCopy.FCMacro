@@ -1,0 +1,7 @@
+### Soldini Riccardo - 31/07/2018 ###
+
+sel=Gui.Selection.getSelectionEx()[0]
+face=sel.SubObjects[0]
+
+copy_face = Part.Face(face.Wires)
+Part.show(copy_face)

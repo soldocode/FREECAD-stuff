@@ -1,0 +1,15 @@
+sel=Gui.Selection.getSelectionEx()[0]
+face=sel.SubObjects[0]
+print('trovato faccia')
+ww=face.Wires
+print 'ha nr ',len(ww),' wires'
+for w in ww:
+    print w,' - ',len(w.Edges),' edges'
+    ee=w.Edges
+    for e in ee:
+        t=type(e.Curve).__name__
+        if t=='GeomBSplineCurve':
+            print type(e.Curve).__name__,' - ',e.Curve.Degree,' segment - len:',e.Length
+        else:
+            print type(e.Curve).__name__, ' - len:',e.Length
+       
