@@ -10,6 +10,16 @@ for w in ww:
         t=type(e.Curve).__name__
         if t=='GeomBSplineCurve':
             print type(e.Curve).__name__,' - ',e.Curve.Degree,' segment - len:',e.Length
+        elif t=='GeomEllipse':
+            f1=e.Curve.Focus1
+            f2=e.Curve.Focus2
+            rM=e.Curve.MajorRadius
+            rm=e.Curve.MinorRadius
+            vv=e.Vertexes
+            #ep=e.Curve.EndPoint
+            print ('Ellisse: vv>',vv[0].X,vv[0].Y,vv[1].X,vv[1].Y)
+            print (e.Orientation)
+            
         else:
             print type(e.Curve).__name__, ' - len:',e.Length
        
