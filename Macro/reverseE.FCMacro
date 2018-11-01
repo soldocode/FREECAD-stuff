@@ -47,13 +47,57 @@ for i in range(0,len(faces)):
         print ("Cone",i," - center",faces[i].Surface.Center)
         faces_tree['Cone'][i]=faces[i]
 
-pp.pprint(faces_tree)    
+pp.pprint(faces_tree) 
 
-planes= dict(faces_tree['Plane'])
-for i in planes:
-    x_axis=abs(planes[i].Surface.Axis.x)
-    print (x_axis)
-	
+
+
+### Find Parallel Faces	
+parallel_planes=[]   
+planes= dict(faces_tree['Plane']).items()
+while len(planes)>0:
+    p=planes.pop(0)
+    collect=[p]
+    
+    norm=p[1].normalAt(0,0)
+    ax=abs(norm.x)
+    ay=abs(norm.y)
+    az=abs(norm.z)
+    print('looking for paralles faces normal on ',ax,ay,az)
+    
+    i=0
+    len_planes=len(planes)
+    print('len planes',len_planes)
+    while len_planes>0 and i<len_planes:
+         print('i:',i)
+         inorm=p[1].normalAt(0,0)
+         ax=abs(inorm.x)
+         ay=abs(inorm.y)
+         az=abs(inorm.z)
+         
+         if iax==ax and iay==ay and iaz==az:
+             print('found!!!')
+             c=planes.pop(i)
+             collect.append(c)
+             len_planes=len(planes)
+         else:
+             i=i+1 
+             len_planes=len(planes)
+             
+
+    parallel_planes.append(collect)   
+
+pp.pprint(parallel_planes)       
+   
+
+### find distance from opposit faces
+
+for opp in parallel_planes:
+    if len(opp)>1:
+       d=opp[0][1].distToShape(opp[1][1])[0]
+       print (d)
+
+
+### to be done............	
 c_list=[]
 for i in c_surf: 
 	c_list.append(i)
