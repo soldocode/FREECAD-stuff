@@ -11,6 +11,7 @@
 
 
 import pprint
+import math
 pp = pprint.PrettyPrinter(indent=4)
 
 sel=Gui.Selection.getSelectionEx()[0]
@@ -36,53 +37,56 @@ for i in range (0,fnum):
 for i in range(0,len(faces)):
     str_face=faces[i].Surface.__str__()
     if str_face=="<Cylinder object>":
-        print ("Cylinder",i," - center:",faces[i].Surface.Center)
+        #print ("Cylinder",i," - center:",faces[i].Surface.Center)
         c_surf[i]=faces[i]
         faces_tree['Cylinder'][i]=faces[i]
     elif str_face=="<Plane object>":
-        print ("Plane",i," - number of edges:",len(faces[i].Edges))
+        #print ("Plane",i," - number of edges:",len(faces[i].Edges))
         p_surf[i]=faces[i]	
         faces_tree['Plane'][i]=faces[i]
     elif str_face=="<Cone object>":
-        print ("Cone",i," - center",faces[i].Surface.Center)
+        #print ("Cone",i," - center",faces[i].Surface.Center)
         faces_tree['Cone'][i]=faces[i]
 
-pp.pprint(faces_tree) 
-
+#pp.pprint(faces_tree) 
 
 
 ### Find Parallel Faces	
 parallel_planes=[]   
 planes= dict(faces_tree['Plane']).items()
+
+#for p in planes:
+#    print (p[1].normalAt(0,0))
+
 while len(planes)>0:
     p=planes.pop(0)
-    collect=[p]
+    collect=[p[0]]
     
     norm=p[1].normalAt(0,0)
-    ax=abs(norm.x)
-    ay=abs(norm.y)
-    az=abs(norm.z)
-    print('looking for paralles faces normal on ',ax,ay,az)
+    ax=round(abs(math.degrees(norm.x)),8)
+    ay=round(abs(math.degrees(norm.y)),8)
+    az=round(abs(math.degrees(norm.z)),8)
+    #print('looking for paralles faces normal on ',ax,ay,az)
     
     i=0
     len_planes=len(planes)
-    print('len planes',len_planes)
+    #print('len planes',len_planes)
     while len_planes>0 and i<len_planes:
-         print('i:',i)
-         inorm=p[1].normalAt(0,0)
-         ax=abs(inorm.x)
-         ay=abs(inorm.y)
-         az=abs(inorm.z)
+         #print('i:',i)
+         inorm=planes[i][1].normalAt(0,0)
+         iax=round(abs(math.degrees(inorm.x)),8)
+         iay=round(abs(math.degrees(inorm.y)),8)
+         iaz=round(abs(math.degrees(inorm.z)),8)
+         #print (ax,iax)
          
-         if iax==ax and iay==ay and iaz==az:
-             print('found!!!')
+         if (((iax==ax) and (iay==ay)) and (iaz==az)):
+             print 'found parallels planes:',p[0]," - ",planes[i][0]
              c=planes.pop(i)
-             collect.append(c)
+             collect.append(c[0])
              len_planes=len(planes)
          else:
              i=i+1 
-             len_planes=len(planes)
-             
+             len_planes=len(planes)           
 
     parallel_planes.append(collect)   
 
@@ -90,11 +94,31 @@ pp.pprint(parallel_planes)
    
 
 ### find distance from opposit faces
-
+planes= dict(faces_tree['Plane']).items()
 for opp in parallel_planes:
-    if len(opp)>1:
-       d=opp[0][1].distToShape(opp[1][1])[0]
-       print (d)
+    for m in range (0,len(opp)):
+        for n in range(0,len(opp)):
+            dist=planes[opp[m]][1].distToShape(planes[opp[n]][1])
+            print (d[0])
+
+### find contacts 
+contatcs={}
+planes= dict(faces_tree['Plane']).items()
+
+count_planes=len(planes)
+for index_plane in range(0,count_planes):
+    p=planes[index_plane]
+    ee=p[1].Wires[0].Edges
+    for index_compare in range(0,count_planes):
+        cp=planes[index_compare]
+        ei=cp[1].Wires[0].Edges
+        if index_plane!=index_compare:
+            for geo1 in range(0,len(ee)):
+                for geo2 in range(0,len(ei)):
+                    if ee[geo1].isSame(ei[geo2]):
+                        print 'faces:',index_plane,".",geo1," - ",index_compare,".",geo2
+ 
+
 
 
 ### to be done............	
