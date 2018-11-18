@@ -19,13 +19,16 @@ faces=sel.Object.Shape.Faces
 
 c_surf={}
 p_surf={}
-b_part=[]	
+b_part=[]
+plane_areas={}	
 faces_tree={"Plane":{},
             "Cylinder":{},
             "Cone":{}}
 
+print "Let's begin..."
+
 fnum=len(faces)
-print ('Number of faces:',fnum)
+print 'Number of faces:',fnum
 
 ### create color tree
 actcolor=sel.Object.ViewObject.DiffuseColor[0]
@@ -44,19 +47,28 @@ for i in range(0,len(faces)):
         #print ("Plane",i," - number of edges:",len(faces[i].Edges))
         p_surf[i]=faces[i]	
         faces_tree['Plane'][i]=faces[i]
+        area=faces[i].Area
+        if area in plane_areas:
+            plane_areas[area].append(i)
+        else:
+            plane_areas[area]=[i]
     elif str_face=="<Cone object>":
         #print ("Cone",i," - center",faces[i].Surface.Center)
         faces_tree['Cone'][i]=faces[i]
 
 #pp.pprint(faces_tree) 
 
+### Find greater faces
+print 'Top plane areas:'
+topareas=sorted(plane_areas,reverse=True)[:2]
+#### sistemareeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee!!!
+for ta in topareas:
+    print plane_areas[ta], '--> ',ta
 
 ### Find Parallel Faces	
 parallel_planes=[]   
-planes= dict(faces_tree['Plane']).items()
+THK=dict.fromkeys(['2','3','4','5','6','8','10','12','15','20','25','30'],0)
 
-#for p in planes:
-#    print (p[1].normalAt(0,0))
 
 while len(planes)>0:
     p=planes.pop(0)
@@ -80,7 +92,7 @@ while len(planes)>0:
          #print (ax,iax)
          
          if (((iax==ax) and (iay==ay)) and (iaz==az)):
-             print 'found parallels planes:',p[0]," - ",planes[i][0]
+             #print 'found parallels planes:',p[0]," - ",planes[i][0]
              c=planes.pop(i)
              collect.append(c[0])
              len_planes=len(planes)
@@ -90,16 +102,37 @@ while len(planes)>0:
 
     parallel_planes.append(collect)   
 
-pp.pprint(parallel_planes)       
-   
+print "Parallel planes:"       
+for p in parallel_planes: print p   
+
+
+THK=dict.fromkeys([2.0,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0],0)
+
 
 ### find distance from opposit faces
-planes= dict(faces_tree['Plane']).items()
+#planes= dict(faces_tree['Plane']).items()
 for opp in parallel_planes:
     for m in range (0,len(opp)):
         for n in range(0,len(opp)):
-            dist=planes[opp[m]][1].distToShape(planes[opp[n]][1])
-            print (d[0])
+            dist=faces_tree['Plane'][opp[m]].distToShape(faces_tree['Plane'][opp[n]])
+            for find in THK:
+                if float(find)==float(dist[0]):
+                    print 'ola'
+                    print (dist[0])
+
+### find distance from opposit faces
+#planes= dict(faces_tree['Plane']).items()
+for ind in topareas:
+
+for opp in parallel_planes:
+    for m in range (0,len(opp)):
+        for n in range(0,len(opp)):
+            dist=faces_tree['Plane'][opp[m]].distToShape(faces_tree['Plane'][opp[n]])
+            for find in THK:
+                if float(find)==float(dist[0]):
+                    print 'ola'
+                    print (dist[0])
+
 
 ### find contacts 
 contatcs={}
