@@ -5,39 +5,59 @@
 #  reversE.py - 2017                                                   #
 #                                                                      #
 #  Modulo per la decostruzione di parti di carpenteria da file STEP    #
-#  e generazione del processo di costruzione                           #
+#  ricostruzione in parti in formato makEasy                           #
+#  e generazione del processo di costruzione  (workflow)               #
 #                                                                      #
 ########################################################################
 
 
 import pprint
 import math
-pp = pprint.PrettyPrinter(indent=4)
 
-sel=Gui.Selection.getSelectionEx()[0]
-faces=sel.Object.Shape.Faces
+def is_planes_parallels(face1,face2):
+    result=False
+    n1=face1.normalAt(0,0)
+    n2=face2.normalAt(0,0)
+    accuracy=8
 
-c_surf={}
-p_surf={}
-b_part=[]
-plane_areas={}	
-faces_tree={"Plane":{},
-            "Cylinder":{},
-            "Cone":{}}
+    ax1=round(abs(math.degrees(n1.x)),accuracy)
+    #print 'ax1:',ax1
+    ay1=round(abs(math.degrees(n1.y)),accuracy)
+    az1=round(abs(math.degrees(n1.z)),accuracy)
+    
+    ax2=round(abs(math.degrees(n2.x)),accuracy)
+    #print 'ax2:',ax2
+    ay2=round(abs(math.degrees(n2.y)),accuracy)
+    az2=round(abs(math.degrees(n2.z)),accuracy)
+                  
+    if (((ax1==ax2) and (ay1==ay2)) and (az1==az2)):
+        result=True
+    return result
 
-print "Let's begin..."
 
-fnum=len(faces)
-print 'Number of faces:',fnum
+def deconstruct_object(obj):
 
-### create color tree
-actcolor=sel.Object.ViewObject.DiffuseColor[0]
-dcol=[]
-for i in range (0,fnum):
-    dcol.append(actcolor)
+ faces=obj.Shape.Faces
 
-### Build faces's tree
-for i in range(0,len(faces)):
+ c_surf={}
+ p_surf={}
+ b_part=[]
+ plane_areas={}	
+ faces_tree={"Plane":{},
+             "Cylinder":{},
+             "Cone":{}}
+
+ fnum=len(faces)
+ print 'Number of faces:',fnum
+
+ ### create color tree
+ actcolor=sel.Object.ViewObject.DiffuseColor[0]
+ dcol=[]
+ for i in range (0,fnum):
+     dcol.append(actcolor)
+
+ ### Build faces's tree
+ for i in range(0,len(faces)):
     str_face=faces[i].Surface.__str__()
     if str_face=="<Cylinder object>":
         #print ("Cylinder",i," - center:",faces[i].Surface.Center)
@@ -56,110 +76,68 @@ for i in range(0,len(faces)):
         #print ("Cone",i," - center",faces[i].Surface.Center)
         faces_tree['Cone'][i]=faces[i]
 
-#pp.pprint(faces_tree) 
+ #pp.pprint(faces_tree) 
 
-### Find greater faces
-print 'Top plane areas:'
-topareas=sorted(plane_areas,reverse=True)[:2]
-#### sistemareeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee!!!
-for ta in topareas:
-    print plane_areas[ta], '--> ',ta
-
-### Find Parallel Faces	
-parallel_planes=[]   
-THK=dict.fromkeys(['2','3','4','5','6','8','10','12','15','20','25','30'],0)
+ ### Find greater faces
+ print 'Top plane areas:'
+ topareas=sorted(plane_areas,reverse=True)[:2]
+ #for ta in topareas:
+    #print plane_areas[ta], '--> ',ta
 
 
-while len(planes)>0:
-    p=planes.pop(0)
-    collect=[p[0]]
-    
-    norm=p[1].normalAt(0,0)
-    ax=round(abs(math.degrees(norm.x)),8)
-    ay=round(abs(math.degrees(norm.y)),8)
-    az=round(abs(math.degrees(norm.z)),8)
-    #print('looking for paralles faces normal on ',ax,ay,az)
-    
-    i=0
-    len_planes=len(planes)
-    #print('len planes',len_planes)
-    while len_planes>0 and i<len_planes:
-         #print('i:',i)
-         inorm=planes[i][1].normalAt(0,0)
-         iax=round(abs(math.degrees(inorm.x)),8)
-         iay=round(abs(math.degrees(inorm.y)),8)
-         iaz=round(abs(math.degrees(inorm.z)),8)
-         #print (ax,iax)
-         
-         if (((iax==ax) and (iay==ay)) and (iaz==az)):
-             #print 'found parallels planes:',p[0]," - ",planes[i][0]
-             c=planes.pop(i)
-             collect.append(c[0])
-             len_planes=len(planes)
-         else:
-             i=i+1 
-             len_planes=len(planes)           
-
-    parallel_planes.append(collect)   
-
-print "Parallel planes:"       
-for p in parallel_planes: print p   
+ ### Find Thickness
+ fa=plane_areas[topareas[0]]
+ fa1=fa[0]
+ if len(fa)>1:
+    fa2=fa[1]
+ else:
+    fa2=plane_areas[topareas[1]][0]
 
 
-THK=dict.fromkeys([2.0,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0],0)
+ POSSIBLE_THK=[2.0,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0]
+ if is_planes_parallels(faces_tree['Plane'][fa1],faces_tree['Plane'][fa2]):
+    thk=round(faces_tree['Plane'][fa1].distToShape(faces_tree['Plane'][fa2])[0],1)
+    #print 'thk: ',thk
+    if thk in POSSIBLE_THK:
+        print 'It could be a plane of ',thk,' mm thick'
 
 
-### find distance from opposit faces
-#planes= dict(faces_tree['Plane']).items()
-for opp in parallel_planes:
-    for m in range (0,len(opp)):
-        for n in range(0,len(opp)):
-            dist=faces_tree['Plane'][opp[m]].distToShape(faces_tree['Plane'][opp[n]])
-            for find in THK:
-                if float(find)==float(dist[0]):
-                    print 'ola'
-                    print (dist[0])
+ ### find adjacents faces 
 
-### find distance from opposit faces
-#planes= dict(faces_tree['Plane']).items()
-for ind in topareas:
-
-for opp in parallel_planes:
-    for m in range (0,len(opp)):
-        for n in range(0,len(opp)):
-            dist=faces_tree['Plane'][opp[m]].distToShape(faces_tree['Plane'][opp[n]])
-            for find in THK:
-                if float(find)==float(dist[0]):
-                    print 'ola'
-                    print (dist[0])
-
-
-### find contacts 
-contatcs={}
-planes= dict(faces_tree['Plane']).items()
-
-count_planes=len(planes)
-for index_plane in range(0,count_planes):
+ planes= dict(faces_tree['Plane']).items()
+ contacts={}
+ count_adjacents=0
+ count_planes=len(planes)
+ for index_plane in range(0,count_planes):
+    linked=[]
     p=planes[index_plane]
     ee=p[1].Wires[0].Edges
     for index_compare in range(0,count_planes):
         cp=planes[index_compare]
         ei=cp[1].Wires[0].Edges
         if index_plane!=index_compare:
+            adjacent=[]
             for geo1 in range(0,len(ee)):
                 for geo2 in range(0,len(ei)):
                     if ee[geo1].isSame(ei[geo2]):
-                        print 'faces:',index_plane,".",geo1," - ",index_compare,".",geo2
- 
+                        count_adjacents+=1
+                        adjacent.append([geo1,index_compare,geo2])
+                        #print 'faces:',index_plane,".",geo1," - ",index_compare,".",geo2
+                        linked.append(adjacent)
+    contacts[index_plane]=linked
+
+            
+ print len(contacts),' linked faces found:' 
+ pp.pprint(contacts)
 
 
 
-### to be done............	
-c_list=[]
-for i in c_surf: 
+ ### to be done............	
+ c_list=[]
+ for i in c_surf: 
 	c_list.append(i)
 
-while len(c_list)>1:
+ while len(c_list)>1:
     blend=c_list.pop()
     not_found=True
     ind=0
@@ -195,5 +173,21 @@ while len(c_list)>1:
 
        ind=ind+1
 
-sel.Object.ViewObject.DiffuseColor=dcol
-print b_part
+ sel.Object.ViewObject.DiffuseColor=dcol
+ print b_part
+ return
+
+
+print "Let's begin..."
+pp = pprint.PrettyPrinter(indent=4)
+
+sels=Gui.Selection.getSelectionEx()
+
+count=0
+for sel in sels:
+    obj=sel.Object
+    if hasattr(obj,"Shape"):
+        print "Object ", obj.Label
+        count+=1
+        deconstruct_object(obj)
+print 'Rilevati nr ',count,' oggetti'

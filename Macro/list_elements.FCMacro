@@ -1,0 +1,6 @@
+count=0
+for obj in FreeCAD.ActiveDocument.Objects:
+    if hasattr(obj,"Shape"):
+        print "Object ", obj.Label
+        count+=1
+print 'Rilevati nr ',count,' oggetti'
