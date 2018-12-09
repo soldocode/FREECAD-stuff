@@ -15,6 +15,11 @@ import pprint
 import math
 
 POSSIBLE_THK=[2.0,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0,35.0,40.0]
+COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-76'},
+             'ROSETTA_DIN7980_d_10':{'name':'Rosetta piana d10'},
+             'VITE_UNI5739_M10x30':{'name':'Vite TE M10x30'},
+             '3572_BB14_001.2.1.1.1':{'name':'Profilo a U 28x14 L=200'}}
+PARTS={}
 
 def is_planes_parallels(face1,face2):
     result=False
@@ -66,7 +71,7 @@ def find_adjacent(planes):
 
 
 def min_faces_distance(faces,planes):
-    dist=1000
+    dist=1000.0
     while len(faces)>0:
         f=faces.pop()
         for i in faces:
@@ -85,9 +90,13 @@ def max_faces_distance(faces,planes):
 
 def deconstruct_object(obj):
 
- if 'RIDUZIONE_CONCENTRICA_114_76' in obj.Label:
-  print 'materiale da commercio'
- else:
+ part_name='indefinito'
+ comcomp=False
+ for c in COMMON_COMP:
+     if c in obj.Label:
+       part_name=COMMON_COMP[c]['name']
+       comcomp=True
+ if not comcomp:
   faces=obj.Shape.Faces
 
   c_surf={}
@@ -161,13 +170,13 @@ def deconstruct_object(obj):
         #print "4 parallels faces found:",matched
         four_faces.append(matched)
   if len(four_faces)==2:
-    size1=max_faces_distance(list(four_faces[0]),faces_tree['Plane'])
-    size2=max_faces_distance(four_faces[1],faces_tree['Plane'])
+    size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
+    size2=int(max_faces_distance(four_faces[1],faces_tree['Plane']))
     thk=min_faces_distance(four_faces[0],faces_tree['Plane'])
     if size1==size2:
-        print "Tubo quadro ",size1,"x",thk
+        part_name= "Tubo quadro "+str(size1)+"x"+str(thk)
     elif size1>size2:
-        print "Tubo rettangolare ",size1,"x",size2,"x",thk
+        part_name= "Tubo rettangolare "+str(size1)+"x"+str(size2)+"x"+str(thk)
      
 
   ### Find Thickness
@@ -184,15 +193,18 @@ def deconstruct_object(obj):
      thk=round(faces_tree['Plane'][fa1].distToShape(faces_tree['Plane'][fa2])[0],1)
      #print 'thk: ',thk
      if thk in POSSIBLE_THK:
-         print 'It could be a plane of ',thk,' mm thick'
+         part_name= 'Sagoma sp. '+str(thk)+' mm'
 
 
  ### find adjacents faces 
 
  #find_adjacent(planes)
 
-
-
+ 
+ if part_name in PARTS:
+     PARTS[part_name]['count']+=1
+ else:
+     PARTS[part_name]={'count':1}
 
 
  ### to be done............	
@@ -227,8 +239,8 @@ def deconstruct_object(obj):
 
   #     ind=ind+1
 
-  sel.Object.ViewObject.DiffuseColor=dcol
-  print b_part
+  #sel.Object.ViewObject.DiffuseColor=dcol
+  #print b_part
  return
 
 
@@ -245,3 +257,4 @@ for sel in sels:
         count+=1
         deconstruct_object(obj)
 print 'Rilevati nr ',count,' oggetti'
+pp.pprint(PARTS)
