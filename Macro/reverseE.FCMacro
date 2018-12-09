@@ -14,6 +14,8 @@
 import pprint
 import math
 
+POSSIBLE_THK=[2.0,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0,35.0,40.0]
+
 def is_planes_parallels(face1,face2):
     result=False
     n1=face1.normalAt(0,0)
@@ -33,31 +35,80 @@ def is_planes_parallels(face1,face2):
     if (((ax1==ax2) and (ay1==ay2)) and (az1==az2)):
         result=True
     return result
+ 
+def find_adjacent(planes):
+    planes= dict(faces_tree['Plane']).items()
+    contacts={}
+    count_adjacents=0
+    count_planes=len(planes)
+    for index_plane in range(0,count_planes):
+       linked=[]
+       p=planes[index_plane]
+       ee=p[1].Wires[0].Edges
+       for index_compare in range(0,count_planes):
+           cp=planes[index_compare]
+           ei=cp[1].Wires[0].Edges
+           if index_plane!=index_compare:
+               adjacent=[]
+               for geo1 in range(0,len(ee)):
+                   for geo2 in range(0,len(ei)):
+                       if ee[geo1].isSame(ei[geo2]):
+                           count_adjacents+=1
+                           adjacent.append([geo1,index_compare,geo2])
+                           #print 'faces:',index_plane,".",geo1," - ",index_compare,".",geo2
+                           linked.append(adjacent)
+       contacts[index_plane]=linked
 
+            
+    print len(contacts),' linked faces found:' 
+    pp.pprint(contacts)
+    return contacts
+
+
+def min_faces_distance(faces,planes):
+    dist=1000
+    while len(faces)>0:
+        f=faces.pop()
+        for i in faces:
+            d=round(planes[f].distToShape(planes[i])[0],1)
+            if d<dist:dist=d
+    return dist
+
+def max_faces_distance(faces,planes):
+    dist=0
+    while len(faces)>0:
+        f=faces.pop()
+        for i in faces:
+            d=round(planes[f].distToShape(planes[i])[0],1)
+            if d>dist:dist=d
+    return dist
 
 def deconstruct_object(obj):
 
- faces=obj.Shape.Faces
+ if 'RIDUZIONE_CONCENTRICA_114_76' in obj.Label:
+  print 'materiale da commercio'
+ else:
+  faces=obj.Shape.Faces
 
- c_surf={}
- p_surf={}
- b_part=[]
- plane_areas={}	
- faces_tree={"Plane":{},
-             "Cylinder":{},
-             "Cone":{}}
+  c_surf={}
+  p_surf={}
+  b_part=[]
+  plane_areas={}	
+  faces_tree={"Plane":{},
+              "Cylinder":{},
+              "Cone":{}}
 
- fnum=len(faces)
- print 'Number of faces:',fnum
+  fnum=len(faces)
+ #print 'Number of faces:',fnum
 
- ### create color tree
- actcolor=sel.Object.ViewObject.DiffuseColor[0]
- dcol=[]
- for i in range (0,fnum):
+  ### create color tree
+  actcolor=sel.Object.ViewObject.DiffuseColor[0]
+  dcol=[]
+  for i in range (0,fnum):
      dcol.append(actcolor)
 
- ### Build faces's tree
- for i in range(0,len(faces)):
+  ### Build faces's tree
+  for i in range(0,len(faces)):
     str_face=faces[i].Surface.__str__()
     if str_face=="<Cylinder object>":
         #print ("Cylinder",i," - center:",faces[i].Surface.Center)
@@ -76,105 +127,108 @@ def deconstruct_object(obj):
         #print ("Cone",i," - center",faces[i].Surface.Center)
         faces_tree['Cone'][i]=faces[i]
 
- #pp.pprint(faces_tree) 
+  #pp.pprint(faces_tree) 
 
- ### Find greater faces
- print 'Top plane areas:'
- topareas=sorted(plane_areas,reverse=True)[:2]
- #for ta in topareas:
-    #print plane_areas[ta], '--> ',ta
+  ### Find greater faces
+  #print 'Top plane areas:'
+  topareas=sorted(plane_areas,reverse=True)[:8]
+  #print topareas
+ 
+  bigger_faces=[]
+  count=0
+  index=0
+  while (count<8) and (index<len(topareas)):
+     for i in range (0,len(plane_areas[topareas[index]])):
+         bigger_faces.append(plane_areas[topareas[index]][i])
+         count+=1
+     index+=1
+  #print bigger_faces
 
+  ### is it a rect/square tube?
+  it_is_a_tube=False
+  group=list(bigger_faces)
+  four_faces=[]
+  while len(group)>0:
+    sample=group.pop()
+    matched=[]
+    matched_count=1
+    for i in group:
+        if is_planes_parallels(faces_tree['Plane'][sample],faces_tree['Plane'][i]):
+            matched_count+=1
+            matched.append(i)        
+    if matched_count==4:
+        matched.append(sample) 
+        #print "4 parallels faces found:",matched
+        four_faces.append(matched)
+  if len(four_faces)==2:
+    size1=max_faces_distance(list(four_faces[0]),faces_tree['Plane'])
+    size2=max_faces_distance(four_faces[1],faces_tree['Plane'])
+    thk=min_faces_distance(four_faces[0],faces_tree['Plane'])
+    if size1==size2:
+        print "Tubo quadro ",size1,"x",thk
+    elif size1>size2:
+        print "Tubo rettangolare ",size1,"x",size2,"x",thk
+     
 
- ### Find Thickness
- fa=plane_areas[topareas[0]]
- fa1=fa[0]
- if len(fa)>1:
-    fa2=fa[1]
- else:
-    fa2=plane_areas[topareas[1]][0]
+  ### Find Thickness
+  if not(it_is_a_tube):
+   fa=plane_areas[topareas[0]]
+   fa1=fa[0]
+   fa2=fa1
+   if len(fa)>1:
+      fa2=fa[1]
+   else:
+      if len(topareas)>1:fa2=plane_areas[topareas[1]][0]
 
-
- POSSIBLE_THK=[2.0,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0]
- if is_planes_parallels(faces_tree['Plane'][fa1],faces_tree['Plane'][fa2]):
-    thk=round(faces_tree['Plane'][fa1].distToShape(faces_tree['Plane'][fa2])[0],1)
-    #print 'thk: ',thk
-    if thk in POSSIBLE_THK:
-        print 'It could be a plane of ',thk,' mm thick'
+   if is_planes_parallels(faces_tree['Plane'][fa1],faces_tree['Plane'][fa2]):
+     thk=round(faces_tree['Plane'][fa1].distToShape(faces_tree['Plane'][fa2])[0],1)
+     #print 'thk: ',thk
+     if thk in POSSIBLE_THK:
+         print 'It could be a plane of ',thk,' mm thick'
 
 
  ### find adjacents faces 
 
- planes= dict(faces_tree['Plane']).items()
- contacts={}
- count_adjacents=0
- count_planes=len(planes)
- for index_plane in range(0,count_planes):
-    linked=[]
-    p=planes[index_plane]
-    ee=p[1].Wires[0].Edges
-    for index_compare in range(0,count_planes):
-        cp=planes[index_compare]
-        ei=cp[1].Wires[0].Edges
-        if index_plane!=index_compare:
-            adjacent=[]
-            for geo1 in range(0,len(ee)):
-                for geo2 in range(0,len(ei)):
-                    if ee[geo1].isSame(ei[geo2]):
-                        count_adjacents+=1
-                        adjacent.append([geo1,index_compare,geo2])
-                        #print 'faces:',index_plane,".",geo1," - ",index_compare,".",geo2
-                        linked.append(adjacent)
-    contacts[index_plane]=linked
+ #find_adjacent(planes)
 
-            
- print len(contacts),' linked faces found:' 
- pp.pprint(contacts)
+
 
 
 
  ### to be done............	
- c_list=[]
- for i in c_surf: 
-	c_list.append(i)
+ #c_list=[]
+ #for i in c_surf: 
+ #	c_list.append(i)
 
- while len(c_list)>1:
-    blend=c_list.pop()
-    not_found=True
-    ind=0
-    while ind<len(c_list) and not_found:
-       c1=faces[blend]
-       c2=faces[c_list[ind]]
-       thickness=c1.Surface.Radius-c2.Surface.Radius
+ #while len(c_list)>1:
+ #   blend=c_list.pop()
+ #   not_found=True
+ #   ind=0
+ #   while ind<len(c_list) and not_found:
+ #      c1=faces[blend]
+ #      c2=faces[c_list[ind]]
+ #      thickness=c1.Surface.Radius-c2.Surface.Radius
 
-       cc1=c1.Surface.Center
-       cc2=c2.Surface.Center 
-       equal_center=(round(cc1.x, 2)==round(cc2.x, 2)) and (round(cc1.y, 2)==round(cc2.y, 2)) and (round(cc1.z, 2)==round(cc2.z, 2))
-       if (equal_center) and (thickness!=0):
-       	  print 'Face',blend,' with Face',c_list[ind],' thickness:',thickness
+ #      cc1=c1.Surface.Center
+ #      cc2=c2.Surface.Center 
+ #      equal_center=(round(cc1.x, 2)==round(cc2.x, 2)) and (round(cc1.y, 2)==round(cc2.y, 2)) and (round(cc1.z, 2)==round(cc2.z, 2))
+ #      if (equal_center) and (thickness!=0):
+ #      	  print 'Face',blend,' with Face',c_list[ind],' thickness:',thickness
 
-          dcol[c_list[ind]]=(1.,0.,1.)
-          dcol[blend]=(1.,0.,1.)
+ #          dcol[c_list[ind]]=(1.,0.,1.)
+ #         dcol[blend]=(1.,0.,1.)
 
           # save in blend part
-          b_part.append(dict(radius1=blend,radius2=c_list[ind]))
-          not_found=False
-          del c_list[ind]
+ #         b_part.append(dict(radius1=blend,radius2=c_list[ind]))
+ #         not_found=False
+ #         del c_list[ind]
 
-          # find faces adjacent
-          #edges=blend["face"].Edges
-          #for e in edges:
-          #  print('edges: ',e.Curve.__class__.__name__)
-          #  if e.Curve.__class__.__name__=='GeomLineSegment':
-          #     e_link=e
-          #     for psi in p_surf:             
-          #         for pse in psi["face"].Edges:
-          #             if pse==e_link:
-		  #			   print('Found linked Surface')     
+   
 
-       ind=ind+1
+  #     ind=ind+1
 
- sel.Object.ViewObject.DiffuseColor=dcol
- print b_part
+  sel.Object.ViewObject.DiffuseColor=dcol
+  print b_part
  return
 
 
