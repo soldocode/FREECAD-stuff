@@ -18,14 +18,20 @@ POSSIBLE_THK=[2.0,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0,35.0,40.0]
 COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-76'},
              'ROSETTA_DIN7980_d_10':{'name':'Rosetta piana d10'},
              'VITE_UNI5739_M10x30':{'name':'Vite TE M10x30'},
-             '3572_BB14_001.2.1.1.1':{'name':'Profilo a U 28x14 L=200'}}
+             '3572_BB14_00':{'name':'Profilo a U 28x14 L=200'},
+             'p9.1.1.1.1.1.1':{'name':'Piastrina fissatubo'},
+             'supporto.1.1.1.1':{'name':'Supporto ripari L=20'},
+             'supporto.1.2.1.1':{'name':'Supporto ripari L=40'},
+             'S300-1191A_00.1':{'name':'Piastrina supporto ripari L=40'},
+             'S300-1191A_00.2':{'name':'Piastrina supporto ripari L=20'},
+             'S300-1126B_00':{'name':'Blocchetti 30x20x10 filettati'}}
 PARTS={}
 
 def is_planes_parallels(face1,face2):
     result=False
     n1=face1.normalAt(0,0)
     n2=face2.normalAt(0,0)
-    accuracy=8
+    accuracy=7
 
     ax1=round(abs(math.degrees(n1.x)),accuracy)
     #print 'ax1:',ax1
@@ -87,6 +93,26 @@ def max_faces_distance(faces,planes):
             d=round(planes[f].distToShape(planes[i])[0],1)
             if d>dist:dist=d
     return dist
+
+def most_found_len(faces,planes):
+    #lenghts={}
+    l=0
+    for f in faces:
+        for e in planes[f].Edges:
+         if e.Length>l:
+             l=e.Length
+         #if e.Length in lenghts:
+         #    lenghts[e.Length]['count']+=1
+         #else:
+         #    lenghts[e.Length]={'count':1}
+    #l=0
+    #c=0
+    #for s in lenghts:
+    #    print s
+    #    if lenghts[s]['count']>c:
+    #        c=lenghts[s]['count']
+    #        l=s
+    return round(l,0)
 
 def deconstruct_object(obj):
 
@@ -151,7 +177,7 @@ def deconstruct_object(obj):
          bigger_faces.append(plane_areas[topareas[index]][i])
          count+=1
      index+=1
-  #print bigger_faces
+  #print 'bigger_faces:',bigger_faces
 
   ### is it a rect/square tube?
   it_is_a_tube=False
@@ -170,13 +196,17 @@ def deconstruct_object(obj):
         #print "4 parallels faces found:",matched
         four_faces.append(matched)
   if len(four_faces)==2:
+    it_is_a_tube=True
     size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
-    size2=int(max_faces_distance(four_faces[1],faces_tree['Plane']))
-    thk=min_faces_distance(four_faces[0],faces_tree['Plane'])
+    size2=int(max_faces_distance(list(four_faces[1]),faces_tree['Plane']))
+    thk=min_faces_distance(list(four_faces[0]),faces_tree['Plane'])
+    lenght=most_found_len(list(four_faces[0]),faces_tree['Plane'])
     if size1==size2:
-        part_name= "Tubo quadro "+str(size1)+"x"+str(thk)
+        part_name= "Tubo quadro "+str(size1)+"x"+str(thk)+" L="+str(lenght)
     elif size1>size2:
-        part_name= "Tubo rettangolare "+str(size1)+"x"+str(size2)+"x"+str(thk)
+        part_name= "Tubo rettangolare "+str(size1)+"x"+str(size2)+"x"+str(thk)+" L="+str(lenght)
+    else:
+        part_name= "Tubo rettangolare "+str(size2)+"x"+str(size1)+"x"+str(thk)+" L="+str(lenght)
      
 
   ### Find Thickness
@@ -203,8 +233,9 @@ def deconstruct_object(obj):
  
  if part_name in PARTS:
      PARTS[part_name]['count']+=1
+     PARTS[part_name]['objects'].append(obj.Label)
  else:
-     PARTS[part_name]={'count':1}
+     PARTS[part_name]={'count':1,'objects':[obj.Label]}
 
 
  ### to be done............	
@@ -253,8 +284,9 @@ count=0
 for sel in sels:
     obj=sel.Object
     if hasattr(obj,"Shape"):
-        print "Object ", obj.Label
-        count+=1
-        deconstruct_object(obj)
+        if obj.Shape.Volume>0:
+            print "Object ", obj.Label
+            count+=1
+            deconstruct_object(obj)
 print 'Rilevati nr ',count,' oggetti'
 pp.pprint(PARTS)
