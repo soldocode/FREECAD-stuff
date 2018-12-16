@@ -13,8 +13,9 @@
 
 import pprint
 import math
+FAC=[]
 
-POSSIBLE_THK=[2.0,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0,35.0,40.0]
+POSSIBLE_THK=[2.0,2.5,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0,35.0,40.0]
 COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-76'},
              'ROSETTA_DIN7980_d_10':{'name':'Rosetta piana d10'},
              'VITE_UNI5739_M10x30':{'name':'Vite TE M10x30'},
@@ -94,24 +95,12 @@ def max_faces_distance(faces,planes):
             if d>dist:dist=d
     return dist
 
-def most_found_len(faces,planes):
-    #lenghts={}
+def max_found_len(faces,planes):
     l=0
     for f in faces:
         for e in planes[f].Edges:
          if e.Length>l:
              l=e.Length
-         #if e.Length in lenghts:
-         #    lenghts[e.Length]['count']+=1
-         #else:
-         #    lenghts[e.Length]={'count':1}
-    #l=0
-    #c=0
-    #for s in lenghts:
-    #    print s
-    #    if lenghts[s]['count']>c:
-    #        c=lenghts[s]['count']
-    #        l=s
     return round(l,0)
 
 def deconstruct_object(obj):
@@ -128,13 +117,14 @@ def deconstruct_object(obj):
   c_surf={}
   p_surf={}
   b_part=[]
-  plane_areas={}	
+  plane_areas={}
+  faces_areas={}	
   faces_tree={"Plane":{},
               "Cylinder":{},
               "Cone":{}}
 
   fnum=len(faces)
- #print 'Number of faces:',fnum
+  #print 'Number of faces:',fnum
 
   ### create color tree
   actcolor=sel.Object.ViewObject.DiffuseColor[0]
@@ -144,6 +134,12 @@ def deconstruct_object(obj):
 
   ### Build faces's tree
   for i in range(0,len(faces)):
+    area=faces[i].Area
+    if area in faces_areas:
+            faces_areas[area].append(i)
+    else:
+            faces_areas[area]=[i]
+
     str_face=faces[i].Surface.__str__()
     if str_face=="<Cylinder object>":
         #print ("Cylinder",i," - center:",faces[i].Surface.Center)
@@ -162,68 +158,135 @@ def deconstruct_object(obj):
         #print ("Cone",i," - center",faces[i].Surface.Center)
         faces_tree['Cone'][i]=faces[i]
 
-  #pp.pprint(faces_tree) 
 
   ### Find greater faces
-  #print 'Top plane areas:'
-  topareas=sorted(plane_areas,reverse=True)[:8]
-  #print topareas
- 
-  bigger_faces=[]
+  eight_top_areas=sorted(faces_areas,reverse=True)[:8]
+  eight_bigger_faces=[]
   count=0
   index=0
-  while (count<8) and (index<len(topareas)):
-     for i in range (0,len(plane_areas[topareas[index]])):
-         bigger_faces.append(plane_areas[topareas[index]][i])
+  while (count<8) and (index<len(eight_top_areas)):
+     for i in range (0,len(faces_areas[eight_top_areas[index]])):
+         eight_bigger_faces.append(faces_areas[eight_top_areas[index]][i])
          count+=1
      index+=1
-  #print 'bigger_faces:',bigger_faces
 
-  ### is it a rect/square tube?
-  it_is_a_tube=False
-  group=list(bigger_faces)
+  classified=False
+
+  ##### is it round tube? #####
+  curved_faces=True
+  group=list(eight_bigger_faces)
+  for i in range(0,4):
+      if group[i] not in faces_tree['Cylinder']:
+          curved_faces=False
+  
+  if curved_faces:
+      dd=[]
+      for n in range (0,4):
+          nn=eight_bigger_faces[n]
+          for m in range (0,4):
+              mm=eight_bigger_faces[m]
+              dist=round(faces_tree['Cylinder'][mm].distToShape(faces_tree['Cylinder'][nn])[0],2)
+              if dist not in dd: dd.append(dist)
+      if len(dd)==2:
+          dd.remove(0)
+          diam=0
+          lenght=0
+          for i in range (0,4):
+              ff=faces_tree['Cylinder'][eight_bigger_faces[i]]
+              d=ff.Surface.Radius*2
+              if d>diam:diam=d
+              edges=ff.OuterWire.Edges
+              for e in edges:
+                  if str(e.Curve.__class__)=="<type 'Part.GeomLineSegment'>":
+                      if e.Length>lenght:lenght=e.Length
+          
+          FAC.append(ff)
+          part_name= "Tubo tondo diam."+str(diam)+"x"+str(dd[0])+" L="+str(lenght)
+          classified=True
+
+
   four_faces=[]
-  while len(group)>0:
-    sample=group.pop()
-    matched=[]
-    matched_count=1
-    for i in group:
-        if is_planes_parallels(faces_tree['Plane'][sample],faces_tree['Plane'][i]):
-            matched_count+=1
-            matched.append(i)        
-    if matched_count==4:
-        matched.append(sample) 
-        #print "4 parallels faces found:",matched
-        four_faces.append(matched)
-  if len(four_faces)==2:
-    it_is_a_tube=True
-    size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
-    size2=int(max_faces_distance(list(four_faces[1]),faces_tree['Plane']))
-    thk=min_faces_distance(list(four_faces[0]),faces_tree['Plane'])
-    lenght=most_found_len(list(four_faces[0]),faces_tree['Plane'])
-    if size1==size2:
-        part_name= "Tubo quadro "+str(size1)+"x"+str(thk)+" L="+str(lenght)
-    elif size1>size2:
-        part_name= "Tubo rettangolare "+str(size1)+"x"+str(size2)+"x"+str(thk)+" L="+str(lenght)
-    else:
-        part_name= "Tubo rettangolare "+str(size2)+"x"+str(size1)+"x"+str(thk)+" L="+str(lenght)
-     
+  two_faces=[]
+  pface_count=0
+  ##### is it a rect/square tube? #####  da sistemare per vedere UNP
+  if not classified:
+     plane_faces=True
+     group=list(eight_bigger_faces)
+     #print group
+     for g in group:
+        if g not in faces_tree['Plane']:
+          plane_faces=False
+        else:
+          pface_count+=1
 
+     if plane_faces:
+       #print group
+       while len(group)>0:
+         sample=group.pop(0)
+         #print sample
+         matched=[]
+         matched_count=1
+         for i in group:
+             #print i
+             if is_planes_parallels(faces_tree['Plane'][sample],faces_tree['Plane'][i]):
+                 matched_count+=1
+                 matched.append(i)
+         matched.append(sample)
+         print  matched_count            
+         if matched_count==4:
+             #print "4 parallels faces found:",matched
+             four_faces.append(matched)
+         if matched_count==2:
+             #print "2 parallels faces found:",matched
+             two_faces.append(matched)
+
+
+       if len(four_faces)==2:
+         classified=True
+         size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
+         size2=int(max_faces_distance(list(four_faces[1]),faces_tree['Plane']))
+         thk=min_faces_distance(list(four_faces[0]),faces_tree['Plane'])
+         lenght=max_found_len(list(four_faces[0]),faces_tree['Plane'])
+         if size1==size2:
+             part_name= "Tubo quadro "+str(size1)+"x"+str(thk)+" L="+str(lenght)
+         elif size1>size2:
+             part_name= "Tubo rettangolare "+str(size1)+"x"+str(size2)+"x"+str(thk)+" L="+str(lenght)
+         else:
+             part_name= "Tubo rettangolare "+str(size2)+"x"+str(size1)+"x"+str(thk)+" L="+str(lenght)
+  
+ 
+  ##### is it a UNP profile? #####
+
+  if not classified:
+     print 'U'
+     print two_faces
+     if pface_count==6:
+         print 'UN'
+         if len(two_faces)==2:
+             print 'UNP'
+             classifed=True
+
+  
   ### Find Thickness
-  if not(it_is_a_tube):
-   fa=plane_areas[topareas[0]]
-   fa1=fa[0]
-   fa2=fa1
-   if len(fa)>1:
-      fa2=fa[1]
-   else:
-      if len(topareas)>1:fa2=plane_areas[topareas[1]][0]
+  if not classified:
+   same_geometry=False
+   group=list(eight_bigger_faces)
+   
+   if (group[0] in faces_tree['Plane']) and (group[1] in faces_tree['Plane']):
+     f1=faces_tree['Plane'][group[0]]
+     f2=faces_tree['Plane'][group[1]]
+     same_geometry=True
+   if (group[0] in faces_tree['Cylinder']) and (group[1] in faces_tree['Cylinder']):
+     f1=faces_tree['Cylinder'][group[0]]
+     f2=faces_tree['Cylinder'][group[1]]
+     same_geometry=True    
 
-   if is_planes_parallels(faces_tree['Plane'][fa1],faces_tree['Plane'][fa2]):
-     thk=round(faces_tree['Plane'][fa1].distToShape(faces_tree['Plane'][fa2])[0],1)
-     #print 'thk: ',thk
-     if thk in POSSIBLE_THK:
-         part_name= 'Sagoma sp. '+str(thk)+' mm'
+   if same_geometry:
+    thk=round(f1.distToShape(f2)[0],1)
+    print 'thk: ',thk
+
+    if thk in POSSIBLE_THK:
+          part_name= 'Sagoma sp. '+str(thk)+' mm'
 
 
  ### find adjacents faces 
@@ -285,7 +348,7 @@ for sel in sels:
     obj=sel.Object
     if hasattr(obj,"Shape"):
         if obj.Shape.Volume>0:
-            print "Object ", obj.Label
+            #print "Object ", obj.Label
             count+=1
             deconstruct_object(obj)
 print 'Rilevati nr ',count,' oggetti'
