@@ -21,12 +21,14 @@ COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-
              'VITE_UNI5739_M10x30':{'name':'Vite TE M10x30'},
              '3572_BB14_00':{'name':'Profilo a U 28x14 L=200'},
              'p9.1.1.1.1.1.1':{'name':'Piastrina fissatubo'},
+             'S400-1102D':{'name':'Piastrina fissatubo'},
              'supporto.1.1.1.1':{'name':'Supporto ripari L=20'},
              'supporto.1.2.1.1':{'name':'Supporto ripari L=40'},
              'S300-1191A_00.1':{'name':'Piastrina supporto ripari L=40'},
              'S300-1191A_00.2':{'name':'Piastrina supporto ripari L=20'},
-             'S300-1126B_00':{'name':'Blocchetti 30x20x10 filettati'}}
+             'S300-1126B':{'name':'Blocchetti 30x20x10 filettati'}}
 PARTS={}
+
 
 def is_planes_parallels(face1,face2):
     result=False
@@ -47,6 +49,7 @@ def is_planes_parallels(face1,face2):
     if (((ax1==ax2) and (ay1==ay2)) and (az1==az2)):
         result=True
     return result
+
  
 def find_adjacent(planes):
     planes= dict(faces_tree['Plane']).items()
@@ -70,7 +73,6 @@ def find_adjacent(planes):
                            #print 'faces:',index_plane,".",geo1," - ",index_compare,".",geo2
                            linked.append(adjacent)
        contacts[index_plane]=linked
-
             
     print len(contacts),' linked faces found:' 
     pp.pprint(contacts)
@@ -86,6 +88,7 @@ def min_faces_distance(faces,planes):
             if d<dist:dist=d
     return dist
 
+
 def max_faces_distance(faces,planes):
     dist=0
     while len(faces)>0:
@@ -95,6 +98,7 @@ def max_faces_distance(faces,planes):
             if d>dist:dist=d
     return dist
 
+
 def max_found_len(faces,planes):
     l=0
     for f in faces:
@@ -103,8 +107,8 @@ def max_found_len(faces,planes):
              l=e.Length
     return round(l,0)
 
-def deconstruct_object(obj):
 
+def deconstruct_object(obj):
  part_name='indefinito'
  comcomp=False
  for c in COMMON_COMP:
@@ -158,7 +162,6 @@ def deconstruct_object(obj):
         #print ("Cone",i," - center",faces[i].Surface.Center)
         faces_tree['Cone'][i]=faces[i]
 
-
   ### Find greater faces
   eight_top_areas=sorted(faces_areas,reverse=True)[:8]
   eight_bigger_faces=[]
@@ -204,35 +207,36 @@ def deconstruct_object(obj):
           part_name= "Tubo tondo diam."+str(diam)+"x"+str(dd[0])+" L="+str(lenght)
           classified=True
 
-
   four_faces=[]
   two_faces=[]
   pface_count=0
-  ##### is it a rect/square tube? #####  da sistemare per vedere UNP
   if not classified:
-     plane_faces=True
-     group=list(eight_bigger_faces)
-     #print group
-     for g in group:
-        if g not in faces_tree['Plane']:
-          plane_faces=False
-        else:
+     #plane_faces=True
+     #group=list(eight_bigger_faces)
+     group=[]
+     print faces_tree['Plane'].keys()
+     print group
+     for g in list(eight_bigger_faces):
+        if g in faces_tree['Plane'].keys():
           pface_count+=1
+          group.append(g)
 
-     if plane_faces:
-       #print group
-       while len(group)>0:
+
+
+     #print prova
+
+     while len(group)>0:
          sample=group.pop(0)
-         #print sample
+         print sample
          matched=[]
          matched_count=1
          for i in group:
-             #print i
+             print i
              if is_planes_parallels(faces_tree['Plane'][sample],faces_tree['Plane'][i]):
                  matched_count+=1
                  matched.append(i)
          matched.append(sample)
-         print  matched_count            
+         #print  matched_count            
          if matched_count==4:
              #print "4 parallels faces found:",matched
              four_faces.append(matched)
@@ -240,8 +244,8 @@ def deconstruct_object(obj):
              #print "2 parallels faces found:",matched
              two_faces.append(matched)
 
-
-       if len(four_faces)==2:
+     ##### is it a rect/square tube? #####
+     if len(four_faces)==2:
          classified=True
          size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
          size2=int(max_faces_distance(list(four_faces[1]),faces_tree['Plane']))
@@ -254,17 +258,16 @@ def deconstruct_object(obj):
          else:
              part_name= "Tubo rettangolare "+str(size2)+"x"+str(size1)+"x"+str(thk)+" L="+str(lenght)
   
- 
-  ##### is it a UNP profile? #####
-
-  if not classified:
-     print 'U'
-     print two_faces
-     if pface_count==6:
-         print 'UN'
-         if len(two_faces)==2:
-             print 'UNP'
-             classifed=True
+       ##### is it a UNP profile? #####
+     elif len(two_faces)==2:
+         classifed=True
+         size1=int(max_faces_distance(list(two_faces[0]),faces_tree['Plane']))
+         size2=int(max_faces_distance(list(two_faces[1]),faces_tree['Plane']))
+         lenght=max_found_len(list(two_faces[0]),faces_tree['Plane'])
+         if size1>size2:
+             part_name= "UNP "+str(size1)+" L="+str(lenght)
+         else:
+             part_name= "UNP "+str(size2)+" L="+str(lenght)
 
   
   ### Find Thickness
@@ -288,18 +291,15 @@ def deconstruct_object(obj):
     if thk in POSSIBLE_THK:
           part_name= 'Sagoma sp. '+str(thk)+' mm'
 
-
  ### find adjacents faces 
 
  #find_adjacent(planes)
 
- 
  if part_name in PARTS:
      PARTS[part_name]['count']+=1
      PARTS[part_name]['objects'].append(obj.Label)
  else:
      PARTS[part_name]={'count':1,'objects':[obj.Label]}
-
 
  ### to be done............	
  #c_list=[]
