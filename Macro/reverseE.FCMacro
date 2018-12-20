@@ -13,9 +13,9 @@
 
 import pprint
 import math
-FAC=[]
 
 POSSIBLE_THK=[2.0,2.5,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0,35.0,40.0]
+POSSIBLE_UNP=[40,50,60,65,80,100,120,140,160,180,180,200,220,240,300]
 COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-76'},
              'ROSETTA_DIN7980_d_10':{'name':'Rosetta piana d10'},
              'VITE_UNI5739_M10x30':{'name':'Vite TE M10x30'},
@@ -29,25 +29,42 @@ COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-
              'S300-1126B':{'name':'Blocchetti 30x20x10 filettati'}}
 PARTS={}
 
+def normalized_degrees(angle):
+     accuracy=7
+     a=math.degrees(round(angle,accuracy))
+     n=a-int(a/360)*360
+     if n<0:n=n+360
+     return n
 
 def is_planes_parallels(face1,face2):
-    result=False
-    n1=face1.normalAt(0,0)
-    n2=face2.normalAt(0,0)
-    accuracy=7
 
-    ax1=round(abs(math.degrees(n1.x)),accuracy)
-    #print 'ax1:',ax1
-    ay1=round(abs(math.degrees(n1.y)),accuracy)
-    az1=round(abs(math.degrees(n1.z)),accuracy)
-    
-    ax2=round(abs(math.degrees(n2.x)),accuracy)
-    #print 'ax2:',ax2
-    ay2=round(abs(math.degrees(n2.y)),accuracy)
-    az2=round(abs(math.degrees(n2.z)),accuracy)
-                  
-    if (((ax1==ax2) and (ay1==ay2)) and (az1==az2)):
-        result=True
+    def plane_from_3points(p1,p2,p3):
+
+       M=[float(p2.X-p1.X),float(p2.Y-p1.Y),float(p2.Z-p1.Z),
+          float(p3.X-p1.X),float(p3.Y-p1.Y),float(p3.Z-p1.Z)]
+       K=[M[1]*M[5]-M[2]*M[4],
+          M[2]*M[3]-M[0]*M[5],
+          M[0]*M[4]-M[1]*M[3]]
+       P=[K[0],K[1],K[2],-(K[0]*p1.X+K[1]*p1.Y+K[2]*p1.Z)]
+       return P
+
+    result=False
+    v1=face1.OuterWire.Vertexes
+    p1=plane_from_3points(v1[0],v1[1],v1[2])
+
+    v2=face2.OuterWire.Vertexes
+    p2=plane_from_3points(v2[0],v2[1],v2[2])
+
+    n=p1[0]*p2[0]+p1[1]*p2[1]+p1[2]*p2[2]
+    sq1=math.sqrt(p1[0]**2+p1[1]**2+p1[2]**2)
+    sq2=math.sqrt(p2[0]**2+p2[1]**2+p2[2]**2)
+    if sq1*sq2!=0.0:
+        cosP=n/(sq1*sq2)
+    else:
+        cosP=0
+    #print 'cosP:',cosP
+    if abs(cosP)==1: result=True
+  
     return result
 
  
@@ -74,7 +91,7 @@ def find_adjacent(planes):
                            linked.append(adjacent)
        contacts[index_plane]=linked
             
-    print len(contacts),' linked faces found:' 
+    #print len(contacts),' linked faces found:' 
     pp.pprint(contacts)
     return contacts
 
@@ -164,15 +181,17 @@ def deconstruct_object(obj):
 
   ### Find greater faces
   eight_top_areas=sorted(faces_areas,reverse=True)[:8]
+  #print (eight_top_areas)
   eight_bigger_faces=[]
   count=0
   index=0
   while (count<8) and (index<len(eight_top_areas)):
+     #print 'f:',faces_areas[eight_top_areas[index]]
      for i in range (0,len(faces_areas[eight_top_areas[index]])):
          eight_bigger_faces.append(faces_areas[eight_top_areas[index]][i])
          count+=1
      index+=1
-
+  #print 'ebf',eight_bigger_faces
   classified=False
 
   ##### is it round tube? #####
@@ -203,7 +222,6 @@ def deconstruct_object(obj):
                   if str(e.Curve.__class__)=="<type 'Part.GeomLineSegment'>":
                       if e.Length>lenght:lenght=e.Length
           
-          FAC.append(ff)
           part_name= "Tubo tondo diam."+str(diam)+"x"+str(dd[0])+" L="+str(lenght)
           classified=True
 
@@ -214,24 +232,20 @@ def deconstruct_object(obj):
      #plane_faces=True
      #group=list(eight_bigger_faces)
      group=[]
-     print faces_tree['Plane'].keys()
-     print group
+     #print faces_tree['Plane'].keys()
+     #print eight_bigger_faces
      for g in list(eight_bigger_faces):
         if g in faces_tree['Plane'].keys():
           pface_count+=1
           group.append(g)
-
-
-
-     #print prova
-
+     #print 'gr',group
      while len(group)>0:
          sample=group.pop(0)
-         print sample
+         #print sample
          matched=[]
          matched_count=1
          for i in group:
-             print i
+             #print i
              if is_planes_parallels(faces_tree['Plane'][sample],faces_tree['Plane'][i]):
                  matched_count+=1
                  matched.append(i)
@@ -257,16 +271,17 @@ def deconstruct_object(obj):
              part_name= "Tubo rettangolare "+str(size1)+"x"+str(size2)+"x"+str(thk)+" L="+str(lenght)
          else:
              part_name= "Tubo rettangolare "+str(size2)+"x"+str(size1)+"x"+str(thk)+" L="+str(lenght)
-  
-       ##### is it a UNP profile? #####
+     ##### is it a UNP profile? #####
      elif len(two_faces)==2:
-         classifed=True
          size1=int(max_faces_distance(list(two_faces[0]),faces_tree['Plane']))
          size2=int(max_faces_distance(list(two_faces[1]),faces_tree['Plane']))
          lenght=max_found_len(list(two_faces[0]),faces_tree['Plane'])
-         if size1>size2:
+         #print size1
+         if size1>size2 and size1 in POSSIBLE_UNP:
+             classifed=True
              part_name= "UNP "+str(size1)+" L="+str(lenght)
-         else:
+         elif size2 in POSSIBLE_UNP:
+             classifed=True
              part_name= "UNP "+str(size2)+" L="+str(lenght)
 
   
@@ -282,17 +297,43 @@ def deconstruct_object(obj):
    if (group[0] in faces_tree['Cylinder']) and (group[1] in faces_tree['Cylinder']):
      f1=faces_tree['Cylinder'][group[0]]
      f2=faces_tree['Cylinder'][group[1]]
-     same_geometry=True    
-
+     same_geometry=True 
+ 
    if same_geometry:
     thk=round(f1.distToShape(f2)[0],1)
     print 'thk: ',thk
 
     if thk in POSSIBLE_THK:
           part_name= 'Sagoma sp. '+str(thk)+' mm'
+      
+    c_surf=list(faces_tree['Cylinder'])
+    nblend=0
+    #print c_surf
+    while len(c_surf)>0:
+      s1=c_surf.pop(0)
+      not_found=True
+      ind=0
+      while ind<len(c_surf) and not_found:
+          c1=faces_tree['Cylinder'][s1]
+          c2=faces_tree['Cylinder'][c_surf[ind]]
+          blend_thk=c1.Surface.Radius-c2.Surface.Radius
+          print 'bt ',blend_thk
+          cc1=c1.Surface.Center
+          cc2=c2.Surface.Center 
+          eqX=round(cc1.x, 2)==round(cc2.x, 2)
+          eqY=round(cc1.y, 2)==round(cc2.y, 2)
+          eqZ=round(cc1.z, 2)==round(cc2.z, 2)
+          equal_center= (eqX and eqY) or (eqX and eqZ) or (eqZ and eqY)
+          if (equal_center) and (abs(blend_thk)==thk):
+             nblend+=1
+             not_found=False
+             print 'bt ',blend_thk
+          ind+=1
+    if nblend==1: part_name+=" con nr "+str(nblend)+" piega"
+    if nblend>1: part_name+=" con nr "+str(nblend)+" pieghe"
 
+    
  ### find adjacents faces 
-
  #find_adjacent(planes)
 
  if part_name in PARTS:
@@ -300,41 +341,6 @@ def deconstruct_object(obj):
      PARTS[part_name]['objects'].append(obj.Label)
  else:
      PARTS[part_name]={'count':1,'objects':[obj.Label]}
-
- ### to be done............	
- #c_list=[]
- #for i in c_surf: 
- #	c_list.append(i)
-
- #while len(c_list)>1:
- #   blend=c_list.pop()
- #   not_found=True
- #   ind=0
- #   while ind<len(c_list) and not_found:
- #      c1=faces[blend]
- #      c2=faces[c_list[ind]]
- #      thickness=c1.Surface.Radius-c2.Surface.Radius
-
- #      cc1=c1.Surface.Center
- #      cc2=c2.Surface.Center 
- #      equal_center=(round(cc1.x, 2)==round(cc2.x, 2)) and (round(cc1.y, 2)==round(cc2.y, 2)) and (round(cc1.z, 2)==round(cc2.z, 2))
- #      if (equal_center) and (thickness!=0):
- #      	  print 'Face',blend,' with Face',c_list[ind],' thickness:',thickness
-
- #          dcol[c_list[ind]]=(1.,0.,1.)
- #         dcol[blend]=(1.,0.,1.)
-
-          # save in blend part
- #         b_part.append(dict(radius1=blend,radius2=c_list[ind]))
- #         not_found=False
- #         del c_list[ind]
-
-   
-
-  #     ind=ind+1
-
-  #sel.Object.ViewObject.DiffuseColor=dcol
-  #print b_part
  return
 
 
@@ -353,3 +359,6 @@ for sel in sels:
             deconstruct_object(obj)
 print 'Rilevati nr ',count,' oggetti'
 pp.pprint(PARTS)
+
+for item in PARTS:
+    print item+'  |  '+str(PARTS[item]['count'])
