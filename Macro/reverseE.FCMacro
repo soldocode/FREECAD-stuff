@@ -13,6 +13,7 @@
 
 import pprint
 import math
+fac=[]
 
 POSSIBLE_THK=[2.0,2.5,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0,35.0,40.0]
 POSSIBLE_UNP=[40,50,60,65,80,100,120,140,160,180,180,200,220,240,300]
@@ -35,6 +36,21 @@ def normalized_degrees(angle):
      n=a-int(a/360)*360
      if n<0:n=n+360
      return n
+
+
+def angle_between_planes(face1,face2):
+    vns1 = face1.normalAt(0,0)
+    vns2 = face2.normalAt(0,0)
+    alpha = math.degrees( vns1.getAngle( vns2 ) )
+    print 'angle between faces:',alpha
+    return alpha
+
+def angle_to_Z(face):
+    vns1 = FreeCAD.Vector(0,0,1)
+    vns2 = face.normalAt(0,0)
+    alpha = math.degrees( vns1.getAngle( vns2 ) )
+    print 'angle between faces:',alpha
+    return alpha
 
 def is_planes_parallels(face1,face2):
 
@@ -67,31 +83,29 @@ def is_planes_parallels(face1,face2):
   
     return result
 
- 
-def find_adjacent(planes):
-    planes= dict(faces_tree['Plane']).items()
+
+
+def find_adjacent(faces,first):
+    group=[first]
     contacts={}
     count_adjacents=0
-    count_planes=len(planes)
-    for index_plane in range(0,count_planes):
-       linked=[]
-       p=planes[index_plane]
-       ee=p[1].Wires[0].Edges
-       for index_compare in range(0,count_planes):
-           cp=planes[index_compare]
-           ei=cp[1].Wires[0].Edges
-           if index_plane!=index_compare:
-               adjacent=[]
-               for geo1 in range(0,len(ee)):
-                   for geo2 in range(0,len(ei)):
-                       if ee[geo1].isSame(ei[geo2]):
-                           count_adjacents+=1
-                           adjacent.append([geo1,index_compare,geo2])
-                           #print 'faces:',index_plane,".",geo1," - ",index_compare,".",geo2
-                           linked.append(adjacent)
-       contacts[index_plane]=linked
-            
-    #print len(contacts),' linked faces found:' 
+    while len(group)>0:
+        #print 'group:', group
+        index_face=group.pop(0)
+        if not index_face in contacts:
+            contacts[index_face]={}      
+            e1=faces[index_face].OuterWire.Edges
+            for index_compare in range(0,len(faces)):
+                if index_compare!=index_face:
+                    e2=faces[index_compare].OuterWire.Edges
+                    for geo1 in range(0,len(e1)):
+                        for geo2 in range(0,len(e2)):
+                            if e1[geo1].isSame(e2[geo2]):
+                                count_adjacents+=1
+                                contacts[index_face][geo1]=[index_compare,geo2]
+                                if index_compare not in group:group.append(index_compare)
+ 
+    print len(contacts),' linked faces found:' 
     pp.pprint(contacts)
     return contacts
 
@@ -145,7 +159,7 @@ def deconstruct_object(obj):
               "Cone":{}}
 
   fnum=len(faces)
-  #print 'Number of faces:',fnum
+  print 'Number of faces:',fnum
 
   ### create color tree
   actcolor=sel.Object.ViewObject.DiffuseColor[0]
@@ -229,8 +243,6 @@ def deconstruct_object(obj):
   two_faces=[]
   pface_count=0
   if not classified:
-     #plane_faces=True
-     #group=list(eight_bigger_faces)
      group=[]
      #print faces_tree['Plane'].keys()
      #print eight_bigger_faces
@@ -285,7 +297,7 @@ def deconstruct_object(obj):
              part_name= "UNP "+str(size2)+" L="+str(lenght)
 
   
-  ### Find Thickness
+  ### find thickness
   if not classified:
    same_geometry=False
    group=list(eight_bigger_faces)
@@ -305,9 +317,13 @@ def deconstruct_object(obj):
 
     if thk in POSSIBLE_THK:
           part_name= 'Sagoma sp. '+str(thk)+' mm'
+
+    weight=round(obj.Shape.Volume*0.0000079,1)
+    part_name+=' ('+str(weight)+'kg)'
       
     c_surf=list(faces_tree['Cylinder'])
     nblend=0
+    blend_faces=[]
     #print c_surf
     while len(c_surf)>0:
       s1=c_surf.pop(0)
@@ -317,7 +333,7 @@ def deconstruct_object(obj):
           c1=faces_tree['Cylinder'][s1]
           c2=faces_tree['Cylinder'][c_surf[ind]]
           blend_thk=c1.Surface.Radius-c2.Surface.Radius
-          print 'bt ',blend_thk
+          #print 'bt ',blend_thk
           cc1=c1.Surface.Center
           cc2=c2.Surface.Center 
           eqX=round(cc1.x, 2)==round(cc2.x, 2)
@@ -327,11 +343,37 @@ def deconstruct_object(obj):
           if (equal_center) and (abs(blend_thk)==thk):
              nblend+=1
              not_found=False
-             print 'bt ',blend_thk
+             print 'blend faces...: ',s1,' and ',c_surf[ind]
+             blend_faces.append(s1)
+             blend_faces.append(c_surf[ind])
           ind+=1
     if nblend==1: part_name+=" con nr "+str(nblend)+" piega"
     if nblend>1: part_name+=" con nr "+str(nblend)+" pieghe"
-
+    if nblend>0:
+        #print 'find adjacent...maybe..',eight_bigger_faces
+        contacts=find_adjacent(faces,eight_bigger_faces[0])
+        adc=contacts[eight_bigger_faces[0]]
+        print 'adc:',adc
+        if eight_bigger_faces[0] in faces_tree['Plane']:
+            for b in blend_faces:
+                for ad in adc:
+                    if b==adc[ad][0]:
+                        print ' Trovato!!!' ,adc[ad]
+                        f1=faces[eight_bigger_faces[0]]
+                        f2=faces[adc[ad][0]]
+                        e1= f1.OuterWire.Edges[ad]
+                        e2= f2.OuterWire.Edges[adc[ad][1]]
+                        fac.append(e1)
+                        fac.append(e2)
+                        fp=e1.Curve.StartPoint
+                        ep=e1.Curve.EndPoint
+                        dx=round(fp.x-ep.x,3)
+                        dy=round(fp.y-ep.y,3)
+                        dz=round(fp.z-ep.z,3)
+                        a=angle_between_planes(f1,f2)
+                        print angle_to_Z(f1)
+                        print 'deltas:',dx,'|',dy,'|',dz,'->',a
+        #fac.append(faces[eight_bigger_faces[0]])
     
  ### find adjacents faces 
  #find_adjacent(planes)
