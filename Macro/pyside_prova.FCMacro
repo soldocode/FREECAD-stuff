@@ -1,0 +1,15 @@
+
+from PySide import QtGui ,QtCore
+app = QtGui.qApp
+mw = FreeCADGui.getMainWindow()
+
+
+myWidget = QtGui.QDockWidget()
+myWidget.setObjectName("my Nice New Widget")
+label = QtGui.QLabel("Hello World", myWidget) # creates a label
+label.setGeometry(QtCore.QRect(2,50,200,24))  # sets its size
+label.setObjectName("myLabel") # sets its name, so it can be found by name
+
+mw.addDockWidget(QtCore.Qt.LeftDockWidgetArea,myWidget)
+myWidget.resize(QtCore.QSize(300,100))
+
