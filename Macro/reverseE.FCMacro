@@ -42,14 +42,14 @@ def angle_between_planes(face1,face2):
     vns1 = face1.normalAt(0,0)
     vns2 = face2.normalAt(0,0)
     alpha = math.degrees( vns1.getAngle( vns2 ) )
-    print 'angle between faces:',alpha
+    print ('angle between faces:',alpha)
     return alpha
 
 def angle_to_Z(face):
     vns1 = FreeCAD.Vector(0,0,1)
     vns2 = face.normalAt(0,0)
     alpha = math.degrees( vns1.getAngle( vns2 ) )
-    print 'angle between faces:',alpha
+    print ('angle between faces:',alpha)
     return alpha
 
 def is_planes_parallels(face1,face2):
@@ -105,7 +105,7 @@ def find_adjacent(faces,first):
                                 contacts[index_face][geo1]=[index_compare,geo2]
                                 if index_compare not in group:group.append(index_compare)
  
-    print len(contacts),' linked faces found:' 
+    print (len(contacts),' linked faces found:') 
     pp.pprint(contacts)
     return contacts
 
@@ -159,7 +159,7 @@ def deconstruct_object(obj):
               "Cone":{}}
 
   fnum=len(faces)
-  print 'Number of faces:',fnum
+  print ('Number of faces:',fnum)
 
   ### create color tree
   actcolor=sel.Object.ViewObject.DiffuseColor[0]
@@ -313,7 +313,7 @@ def deconstruct_object(obj):
  
    if same_geometry:
     thk=round(f1.distToShape(f2)[0],1)
-    print 'thk: ',thk
+    print ('thk: ',thk)
 
     if thk in POSSIBLE_THK:
           part_name= 'Sagoma sp. '+str(thk)+' mm'
@@ -343,7 +343,7 @@ def deconstruct_object(obj):
           if (equal_center) and (abs(blend_thk)==thk):
              nblend+=1
              not_found=False
-             print 'blend faces...: ',s1,' and ',c_surf[ind]
+             print ('blend faces...: ',s1,' and ',c_surf[ind])
              blend_faces.append(s1)
              blend_faces.append(c_surf[ind])
           ind+=1
@@ -353,12 +353,12 @@ def deconstruct_object(obj):
         #print 'find adjacent...maybe..',eight_bigger_faces
         contacts=find_adjacent(faces,eight_bigger_faces[0])
         adc=contacts[eight_bigger_faces[0]]
-        print 'adc:',adc
+        print ('adc:',adc)
         if eight_bigger_faces[0] in faces_tree['Plane']:
             for b in blend_faces:
                 for ad in adc:
                     if b==adc[ad][0]:
-                        print ' Trovato!!!' ,adc[ad]
+                        print (' Trovato!!!' ,adc[ad])
                         f1=faces[eight_bigger_faces[0]]
                         f2=faces[adc[ad][0]]
                         e1= f1.OuterWire.Edges[ad]
@@ -371,8 +371,8 @@ def deconstruct_object(obj):
                         dy=round(fp.y-ep.y,3)
                         dz=round(fp.z-ep.z,3)
                         a=angle_between_planes(f1,f2)
-                        print angle_to_Z(f1)
-                        print 'deltas:',dx,'|',dy,'|',dz,'->',a
+                        print (angle_to_Z(f1))
+                        print ('deltas:',dx,'|',dy,'|',dz,'->',a)
         #fac.append(faces[eight_bigger_faces[0]])
     
  ### find adjacents faces 
@@ -386,7 +386,7 @@ def deconstruct_object(obj):
  return
 
 
-print "Let's begin..."
+print ("Let's begin...")
 pp = pprint.PrettyPrinter(indent=4)
 
 sels=Gui.Selection.getSelectionEx()
@@ -399,8 +399,8 @@ for sel in sels:
             #print "Object ", obj.Label
             count+=1
             deconstruct_object(obj)
-print 'Rilevati nr ',count,' oggetti'
+print ('Rilevati nr ',count,' oggetti')
 pp.pprint(PARTS)
 
 for item in PARTS:
-    print item+'  |  '+str(PARTS[item]['count'])
+    print (item+'  |  '+str(PARTS[item]['count']))

@@ -55,9 +55,9 @@ copy_face = Part.Face(face.Wires)
 
 # align face on Z plane
 vns1 = face.normalAt(0.0,0.0)
-print 'Face Normal Vect: ',vns1.normalize()
+print ('Face Normal Vect: ',vns1.normalize())
 zdeg=vns1.getAngle(FC.Vector(0.0,0.0,1.0))
-print 'Rotation degree to Z plane: ',math.degrees(zdeg) 
+print ('Rotation degree to Z plane: ',math.degrees(zdeg)) 
 
 rAxis=FC.Rotation(FC.Vector(0.0,0.0,1.0),vns1.normalize()).Axis
 rDegree=-math.degrees(zdeg)
@@ -78,13 +78,14 @@ chains=[]
 for edge in edges: 
     ind_nd=0
     type_edge=type(edge.Curve).__name__
+    print (type_edge)
     vertexes=edge.Vertexes
-    if type_edge=='GeomLineSegment': 
+    if type_edge=='GeomLineSegment' or type_edge=='Line': 
         txt='line'
         n1=indexNode(vertexes[0].X,vertexes[0].Y)
         n2=indexNode(vertexes[1].X,vertexes[1].Y)
         geos.append(['Line',n1,n2])
-    if type_edge=='GeomCircle':
+    if type_edge=='GeomCircle' or type_edge=='Circle':
         if len(edge.Vertexes)==1: 
             txt='circle'
             n1=indexNode(edge.Curve.Center.x,edge.Curve.Center.y)
