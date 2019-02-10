@@ -13,10 +13,12 @@
 
 import pprint
 import math
+import g2
 fac=[]
 
 POSSIBLE_THK=[2.0,2.5,3.0,4.0,5.0,6.0,8.0,10.0,12.0,15.0,20.0,25.0,30.0,35.0,40.0]
 POSSIBLE_UNP=[40,50,60,65,80,100,120,140,160,180,180,200,220,240,300]
+POSSIBLE_HEA={220:[220,210]}
 COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-76'},
              'ROSETTA_DIN7980_d_10':{'name':'Rosetta piana d10'},
              'VITE_UNI5739_M10x30':{'name':'Vite TE M10x30'},
@@ -51,6 +53,48 @@ def angle_to_Z(face):
     alpha = math.degrees( vns1.getAngle( vns2 ) )
     print ('angle between faces:',alpha)
     return alpha
+
+
+def is_edges_parallels(edge1,edge2):
+    result=False
+    d1=edge1.Curve.Direction
+    d2=edge2.Curve.Direction
+    print (d1)
+    print (d2)
+    if abs(d1.x)==abs(d2.x) and abs(d1.y)==abs(d2.y) and abs(d1.z)==abs(d2.z):
+        print ('paralleli')
+        result=True
+    return result
+
+def get_parallel_edges(face):
+
+    e_list=[]
+    for i in range(0,len(face.OuterWire.Edges)):
+        found=False
+        e=face.OuterWire.Edges[i]
+        for c in e_list:
+           if is_edges_parallels(e,face.OuterWire.Edges[c[0]]):
+               c.append(i)
+               found=True
+        if not found:
+            e_list.append([i])
+
+    dist={}
+    for pe in e_list:
+        if len(pe)>1:
+            e1=face.OuterWire.Edges[pe.pop(0)]
+            p1=g2.Point(e1.Vertexes[0].X,e1.Vertexes[0].Y)
+            p2=g2.Point(e1.Vertexes[1].X,e1.Vertexes[1].Y)
+            l1=g2.Line(p1,p2)
+            for e in pe:
+                e2=face.OuterWire.Edges[e]
+                p1=g2.Point(e2.Vertexes[0].X,e2.Vertexes[0].Y)
+                p2=g2.Point(e2.Vertexes[1].X,e2.Vertexes[1].Y)
+                l2=g2.Line(p1,p2)
+                print(l1)
+                print(l2)
+                
+    return dist
 
 def is_planes_parallels(face1,face2):
 
@@ -138,6 +182,14 @@ def max_found_len(faces,planes):
              l=e.Length
     return round(l,0)
 
+def min_found_len(faces,planes):
+    l=1000000
+    for f in faces:
+        for e in planes[f].Edges:
+         if e.Length<l:
+             l=e.Length
+    return round(l,2)
+
 
 def deconstruct_object(obj):
  part_name='indefinito'
@@ -205,7 +257,7 @@ def deconstruct_object(obj):
          eight_bigger_faces.append(faces_areas[eight_top_areas[index]][i])
          count+=1
      index+=1
-  #print 'ebf',eight_bigger_faces
+  print ('ebf:',eight_bigger_faces)
   classified=False
 
   ##### is it round tube? #####
@@ -239,10 +291,12 @@ def deconstruct_object(obj):
           part_name= "Tubo tondo diam."+str(diam)+"x"+str(dd[0])+" L="+str(lenght)
           classified=True
 
-  four_faces=[]
-  two_faces=[]
-  pface_count=0
+  
   if not classified:
+     six_faces=[]
+     four_faces=[]
+     two_faces=[]
+     pface_count=0
      group=[]
      #print faces_tree['Plane'].keys()
      #print eight_bigger_faces
@@ -262,13 +316,30 @@ def deconstruct_object(obj):
                  matched_count+=1
                  matched.append(i)
          matched.append(sample)
-         #print  matched_count            
+         print  ('mached_count:',matched_count)   
+         if matched_count==6:
+             six_faces.append(matched)
          if matched_count==4:
-             #print "4 parallels faces found:",matched
+             #print ("4 parallels faces found:",matched)
              four_faces.append(matched)
          if matched_count==2:
-             #print "2 parallels faces found:",matched
+             #print ("2 parallels faces found:",matched)
              two_faces.append(matched)
+
+     print ('six faces macthed:',len(six_faces))
+     print ('four faces macthed:',len(four_faces))
+     print ('two faces macthed:',len(two_faces))
+     ##### is it a H or I profile? #####
+     if len(four_faces)==1 and len(two_faces)==2:
+         size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
+         pe=get_parallel_edges(faces_tree['Plane'][four_faces[0][0]])
+         dd=get_distances_in_parallel_edges(pe)
+         #size2=int(max_faces_distance(list(four_faces[1]),faces_tree['Plane']))
+         # find
+         print (size1)
+         print (min_faces_distance(list(four_faces[0]),faces_tree['Plane']))
+         part_name='I o H profile'
+         classified=True
 
      ##### is it a rect/square tube? #####
      if len(four_faces)==2:
