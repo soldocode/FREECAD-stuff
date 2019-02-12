@@ -7,9 +7,9 @@ face=sel.SubObjects[0]
 obj=sel.Object
 
 vns1 = face.normalAt(0.0,0.0)
-print 'Face Normal Vect: ',vns1.normalize()
+print ('Face Normal Vect: ',vns1.normalize())
 zdeg=vns1.getAngle(FC.Vector(0.0,0.0,1.0))
-print 'Rotation degree to Z plane: ',math.degrees(zdeg) 
+print ('Rotation degree to Z plane: ',math.degrees(zdeg)) 
 
 
 rAxis=FC.Rotation(FC.Vector(0.0,0.0,1.0),vns1.normalize()).Axis

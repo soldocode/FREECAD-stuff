@@ -10,7 +10,7 @@
 #                                                                      #
 ########################################################################
 
-
+from FreeCAD import Vector,Placement,Rotation
 import pprint
 import math
 import g2
@@ -51,7 +51,7 @@ def angle_to_Z(face):
     vns1 = FreeCAD.Vector(0,0,1)
     vns2 = face.normalAt(0,0)
     alpha = math.degrees( vns1.getAngle( vns2 ) )
-    print ('angle between faces:',alpha)
+    print ('angle to Z plane:',alpha)
     return alpha
 
 
@@ -192,6 +192,39 @@ def min_found_len(faces,planes):
 
 
 def deconstruct_object(obj):
+
+ def build_areas_dict(faces):
+    faces_areas={}
+    for i in range(0,len(faces)):
+       area=faces[i].Area
+       if area in faces_areas:
+               faces_areas[area].append(i)
+       else:
+               faces_areas[area]=[i]
+    return faces_areas 
+
+ def build_tree(faces):
+     faces_tree={"Plane":{},
+              "Cylinder":{},
+              "Cone":{}}
+
+      ### Build faces's tree
+     for i in range(0,len(faces)):
+       str_face=faces[i].Surface.__str__()
+       if str_face=="<Cylinder object>":
+           #print ("Cylinder",i," - center:",faces[i].Surface.Center)
+           c_surf[i]=faces[i]
+           faces_tree['Cylinder'][i]=faces[i]
+       elif str_face=="<Plane object>":
+           #print ("Plane",i," - number of edges:",len(faces[i].Edges))
+           p_surf[i]=faces[i]	
+           faces_tree['Plane'][i]=faces[i]     
+       elif str_face=="<Cone object>":
+           #print ("Cone",i," - center",faces[i].Surface.Center)
+           faces_tree['Cone'][i]=faces[i]
+
+     return faces_tree
+
  part_name='indefinito'
  comcomp=False
  for c in COMMON_COMP:
@@ -204,12 +237,7 @@ def deconstruct_object(obj):
   c_surf={}
   p_surf={}
   b_part=[]
-  plane_areas={}
-  faces_areas={}	
-  faces_tree={"Plane":{},
-              "Cylinder":{},
-              "Cone":{}}
-
+  
   fnum=len(faces)
   print ('Number of faces:',fnum)
 
@@ -219,31 +247,8 @@ def deconstruct_object(obj):
   for i in range (0,fnum):
      dcol.append(actcolor)
 
-  ### Build faces's tree
-  for i in range(0,len(faces)):
-    area=faces[i].Area
-    if area in faces_areas:
-            faces_areas[area].append(i)
-    else:
-            faces_areas[area]=[i]
-
-    str_face=faces[i].Surface.__str__()
-    if str_face=="<Cylinder object>":
-        #print ("Cylinder",i," - center:",faces[i].Surface.Center)
-        c_surf[i]=faces[i]
-        faces_tree['Cylinder'][i]=faces[i]
-    elif str_face=="<Plane object>":
-        #print ("Plane",i," - number of edges:",len(faces[i].Edges))
-        p_surf[i]=faces[i]	
-        faces_tree['Plane'][i]=faces[i]
-        area=faces[i].Area
-        if area in plane_areas:
-            plane_areas[area].append(i)
-        else:
-            plane_areas[area]=[i]
-    elif str_face=="<Cone object>":
-        #print ("Cone",i," - center",faces[i].Surface.Center)
-        faces_tree['Cone'][i]=faces[i]
+  faces_areas=build_areas_dict(faces)
+  faces_tree=build_tree(faces)
 
   ### Find greater faces
   eight_top_areas=sorted(faces_areas,reverse=True)[:8]
@@ -331,9 +336,21 @@ def deconstruct_object(obj):
      print ('two faces macthed:',len(two_faces))
      ##### is it a H or I profile? #####
      if len(four_faces)==1 and len(two_faces)==2:
+         f1=faces_tree['Plane'][four_faces[0][0]]
          size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
-         pe=get_parallel_edges(faces_tree['Plane'][four_faces[0][0]])
-         dd=get_distances_in_parallel_edges(pe)
+         fac.append(f1)
+         za=angle_to_Z(f1)
+         pos = obj.Placement.Base
+         rot = Rotation(Vector(0,1,0),-za)
+         newplace = Placement(pos,rot,Vector(0,0,0))
+         obj.Placement = newplace
+         for e in f1.Edges:
+             for v in e.Vertexes:
+                 print (v.Z)
+         #pe=get_parallel_edges(faces_tree['Plane'][four_faces[0][0]])
+         #print ('angletoZ:',za)
+         za=angle_to_Z(f1)
+         #dd=get_distances_in_parallel_edges(pe)
          #size2=int(max_faces_distance(list(four_faces[1]),faces_tree['Plane']))
          # find
          print (size1)
