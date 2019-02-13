@@ -54,6 +54,19 @@ def angle_to_Z(face):
     print ('angle to Z plane:',alpha)
     return alpha
 
+def angle_to_Y(face):
+    vns1 = FreeCAD.Vector(0,1,0)
+    vns2 = face.normalAt(0,0)
+    alpha = math.degrees( vns1.getAngle( vns2 ) )
+    print ('angle to Y plane:',alpha)
+    return alpha
+
+def angle_to_X(face):
+    vns1 = FreeCAD.Vector(1,0,0)
+    vns2 = face.normalAt(0,0)
+    alpha = math.degrees( vns1.getAngle( vns2 ) )
+    print ('angle to X plane:',alpha)
+    return alpha
 
 def is_edges_parallels(edge1,edge2):
     result=False
@@ -337,13 +350,23 @@ def deconstruct_object(obj):
      ##### is it a H or I profile? #####
      if len(four_faces)==1 and len(two_faces)==2:
          f1=faces_tree['Plane'][four_faces[0][0]]
-         size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
-         fac.append(f1)
-         za=angle_to_Z(f1)
+         za=angle_to_X(f1)
+         pos = obj.Placement.Base
+         rot = Rotation(Vector(1,0,0),-za)
+         newplace = Placement(pos,rot,Vector(0,0,0))
+         obj.Placement = newplace
+         faces=obj.Shape.Faces
+         faces_tree=build_tree(faces)
+         f1=faces_tree['Plane'][four_faces[0][0]]
+         za=angle_to_Y(f1)
          pos = obj.Placement.Base
          rot = Rotation(Vector(0,1,0),-za)
          newplace = Placement(pos,rot,Vector(0,0,0))
          obj.Placement = newplace
+         faces=obj.Shape.Faces
+         faces_tree=build_tree(faces)
+         size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
+         f1=faces_tree['Plane'][four_faces[0][0]]
          for e in f1.Edges:
              for v in e.Vertexes:
                  print (v.Z)
@@ -453,11 +476,13 @@ def deconstruct_object(obj):
                         e2= f2.OuterWire.Edges[adc[ad][1]]
                         fac.append(e1)
                         fac.append(e2)
-                        fp=e1.Curve.StartPoint
-                        ep=e1.Curve.EndPoint
-                        dx=round(fp.x-ep.x,3)
-                        dy=round(fp.y-ep.y,3)
-                        dz=round(fp.z-ep.z,3)
+                        #fp=e1.Curve.StartPoint
+                        #ep=e1.Curve.EndPoint
+                        fp=e1.Vertexes[0]
+                        ep=e1.Vertexes[1]
+                        dx=round(fp.X-ep.X,3)
+                        dy=round(fp.Y-ep.Y,3)
+                        dz=round(fp.Z-ep.Z,3)
                         a=angle_between_planes(f1,f2)
                         print (angle_to_Z(f1))
                         print ('deltas:',dx,'|',dy,'|',dz,'->',a)
