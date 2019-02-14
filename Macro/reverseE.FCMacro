@@ -109,6 +109,38 @@ def get_parallel_edges(face):
                 
     return dist
 
+def get_box_dimensions(obj):
+    bb=obj.Shape.BoundBox
+    return [round(bb.XLength,2),round(bb.YLength,2),round(bb.ZLength,2)]
+
+
+def is_in_POSSIBLE_HEA(obj):
+    keys=list(POSSIBLE_HEA.keys())
+    result=[False]
+    found=False
+    bb=get_box_dimensions(obj)
+    ax=['X','Y','Z']
+    while len(keys)>0 and not found:
+        k=keys.pop()
+        c=POSSIBLE_HEA[k]
+        for i in range(0,3):
+            a=ax.pop(0)
+            ax.append(a)
+            b=bb.pop(0)
+            bb.append(b)
+            for i in range (0,2):
+                a=ax.pop(1)
+                ax.append(a)
+                b=bb.pop(1)
+                bb.append(b)
+                if round(bb[0],4)==c[0] and round(bb[1],4)==c[1]:
+                    found=True
+                    result=[True,list(bb)]
+                    print (result)
+                    print (ax)           
+    return result 
+
+
 def is_planes_parallels(face1,face2):
 
     def plane_from_3points(p1,p2,p3):
@@ -238,6 +270,8 @@ def deconstruct_object(obj):
 
      return faces_tree
 
+
+ weight=round(obj.Shape.Volume*0.0000079,1)
  part_name='indefinito'
  comcomp=False
  for c in COMMON_COMP:
@@ -344,9 +378,9 @@ def deconstruct_object(obj):
              #print ("2 parallels faces found:",matched)
              two_faces.append(matched)
 
-     print ('six faces macthed:',len(six_faces))
-     print ('four faces macthed:',len(four_faces))
-     print ('two faces macthed:',len(two_faces))
+     #print ('six faces macthed:',len(six_faces))
+     #print ('four faces macthed:',len(four_faces))
+     #print ('two faces macthed:',len(two_faces))
      ##### is it a H or I profile? #####
      if len(four_faces)==1 and len(two_faces)==2:
          f1=faces_tree['Plane'][four_faces[0][0]]
@@ -365,24 +399,16 @@ def deconstruct_object(obj):
          obj.Placement = newplace
          faces=obj.Shape.Faces
          faces_tree=build_tree(faces)
-         size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
          f1=faces_tree['Plane'][four_faces[0][0]]
-         for e in f1.Edges:
-             for v in e.Vertexes:
-                 print (v.Z)
-         #pe=get_parallel_edges(faces_tree['Plane'][four_faces[0][0]])
-         #print ('angletoZ:',za)
-         za=angle_to_Z(f1)
-         #dd=get_distances_in_parallel_edges(pe)
-         #size2=int(max_faces_distance(list(four_faces[1]),faces_tree['Plane']))
-         # find
-         print (size1)
-         print (min_faces_distance(list(four_faces[0]),faces_tree['Plane']))
-         part_name='I o H profile'
-         classified=True
+         hea=is_in_POSSIBLE_HEA(obj)
+         print (hea)
+         if hea[0]==True:
+             print (hea[1])
+             part_name='HEA '+str(hea[1][0])+' L='+str(round(hea[1][2]))+' ('+str(weight)+')'
+             classified=True
 
      ##### is it a rect/square tube? #####
-     if len(four_faces)==2:
+     if not classified and len(four_faces)==2:
          classified=True
          size1=int(max_faces_distance(list(four_faces[0]),faces_tree['Plane']))
          size2=int(max_faces_distance(list(four_faces[1]),faces_tree['Plane']))
@@ -486,7 +512,6 @@ def deconstruct_object(obj):
                         a=angle_between_planes(f1,f2)
                         print (angle_to_Z(f1))
                         print ('deltas:',dx,'|',dy,'|',dz,'->',a)
-        #fac.append(faces[eight_bigger_faces[0]])
     
  ### find adjacents faces 
  #find_adjacent(planes)
