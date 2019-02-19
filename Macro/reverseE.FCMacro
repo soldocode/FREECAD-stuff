@@ -61,6 +61,9 @@ def is_in_POSSIBLE_HEA(obj):
                     print (ax)           
     return result 
 
+def is_in_POSSIBLE_RECT_TUBE(obj):
+    result=True
+    return result
 
 def deconstruct_object(obj):
 
@@ -101,7 +104,6 @@ def deconstruct_object(obj):
     #c_surf=list(faces_tree['Cylinder'])
     nblend=0
     blend_faces=[]
-    print (c_surf)
     while len(c_surf)>0:
       s1=c_surf.pop(0)
       not_found=True
@@ -109,25 +111,23 @@ def deconstruct_object(obj):
       while ind<len(c_surf) and not_found:
           c1=faces_tree['Cylinder'][s1]
           c2=faces_tree['Cylinder'][c_surf[ind]]
-          blend_thk=round(c1.Surface.Radius-c2.Surface.Radius,2)
-          print ('bt ',blend_thk)
-          cc1=c1.Surface.Center
-          cc2=c2.Surface.Center 
-          print('cc1:',cc1)
-          print('cc2:',cc2)
+          blend_thk=round(c1.distToShape(c2)[0],2)
+          cc1=c1.Surface.Axis
+          cc2=c2.Surface.Axis 
           eqX=round(cc1.x, 2)==round(cc2.x, 2)
           eqY=round(cc1.y, 2)==round(cc2.y, 2)
           eqZ=round(cc1.z, 2)==round(cc2.z, 2)
-          equal_center= (eqX and eqY) and (eqX and eqZ) and (eqZ and eqY)
+          equal_center= (eqX and eqY) or (eqX and eqZ) or (eqZ and eqY)
           if (equal_center) and (abs(blend_thk)==thk):
              nblend+=1
              not_found=False
+             print ('bt ',blend_thk)
              print ('blend faces...: ',s1,' and ',c_surf[ind])
+             print (c1.Surface.Axis)
+             print (c2.Surface.Axis)
              blend_faces.append(s1)
              blend_faces.append(c_surf[ind])
           ind+=1
-          VARS.append(c1)
-          #print(nblend)
     return blend_faces
 
 
@@ -339,8 +339,8 @@ def deconstruct_object(obj):
                         f2=faces[adc[ad][0]]
                         e1= f1.OuterWire.Edges[ad]
                         e2= f2.OuterWire.Edges[adc[ad][1]]
-                        fac.append(e1)
-                        fac.append(e2)
+                        #fac.append(e1)
+                        #fac.append(e2)
                         #fp=e1.Curve.StartPoint
                         #ep=e1.Curve.EndPoint
                         fp=e1.Vertexes[0]
