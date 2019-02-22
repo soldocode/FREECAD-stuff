@@ -1,0 +1,14 @@
+import math
+import FreeCAD as FC
+import MeFunctions as MF
+import Part
+
+
+sel=Gui.Selection.getSelectionEx()[0]
+face=sel.SubObjects[0]
+
+cp=Part.Face(face.Wires)
+MF.align_face_to_Zplane(cp)
+if cp.BoundBox.XLength<cp.BoundBox.YLength:
+    cp.rotate(FreeCAD.Vector(0,0,0),FreeCAD.Vector(0,0,1),90)
+Part.show(cp)
