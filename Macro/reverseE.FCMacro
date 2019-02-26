@@ -14,6 +14,7 @@ from FreeCAD import Vector,Placement,Rotation
 import pprint
 import math
 import g2
+import makEasy
 from MeFunctions import *
 VARS=[]
 
@@ -324,6 +325,16 @@ def deconstruct_object(obj):
     if nblend==1: part_name+=" con nr "+str(nblend)+" piega"
     if nblend>1: part_name+=" con nr "+str(nblend)+" pieghe"
 
+    if nblend==0:
+        cp=Part.Face(faces[eight_bigger_faces[0]].Wires)
+        align_face_to_Zplane(cp)
+        if cp.BoundBox.XLength<cp.BoundBox.YLength:
+            cp.rotate(FreeCAD.Vector(0,0,0),FreeCAD.Vector(0,0,1),90)
+        gg=geos_from_face(cp)
+        paths=g2.PathsFromGeos(gg['geos'],gg['nodes'])
+    
+        
+        
 
     if nblend>0:
         #print 'find adjacent...maybe..',eight_bigger_faces
@@ -358,9 +369,12 @@ def deconstruct_object(obj):
  if part_name in PARTS:
      PARTS[part_name]['count']+=1
      PARTS[part_name]['objects'].append(obj.Label)
+     PARTS[part_name]['weight']=weight
+     PARTS[part_name]['makEasy']=None
  else:
-     PARTS[part_name]={'count':1,'objects':[obj.Label]}
+     PARTS[part_name]={'count':1,'objects':[obj.Label],'weight':weight,'makEasy':None}
  return
+
 
 
 print ("Let's begin...")

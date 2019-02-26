@@ -1,7 +1,8 @@
-import math
+import math,g2
 import FreeCAD as FC
 import MeFunctions as MF
 import Part
+from PySide import QtGui
 
 
 sel=Gui.Selection.getSelectionEx()[0]
@@ -12,5 +13,23 @@ MF.align_face_to_Zplane(cp)
 if cp.BoundBox.XLength<cp.BoundBox.YLength:
     cp.rotate(FreeCAD.Vector(0,0,0),FreeCAD.Vector(0,0,1),90)
 
-shape=MF.face_to_g2Shape(cp)
-Part.show(cp)
+gg=MF.geos_from_face(cp)
+paths=g2.PathsFromGeos(gg['geos'],gg['nodes'])
+ap={}
+for p in paths:
+    ap[p.area]=p
+
+dr=g2.Drawing()
+conta=0
+for p in paths:
+    for i in range(0,len(p.geometries)):
+        g=p.geo(i)   
+        print(g)
+        dr.insertGeo(conta,g)
+        conta+=1
+
+output_dxf=dr.getDXF()
+filename=QtGui.QFileDialog.getSaveFileName(None,"Salva DXF", "", ".DXF")
+f=open(filename[0],"w")
+f.write(output_dxf)
+f.close()

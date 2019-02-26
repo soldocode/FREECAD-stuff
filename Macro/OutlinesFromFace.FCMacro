@@ -100,7 +100,9 @@ for edge in edges:
             n2=indexNode(middle.x,middle.y)
             geos.append(['Arc',n1,n2,n3]) 
 
-
+#chains=g2.PathsFromGeos(geos,nodes)
+print ('geos:',geos)
+ 	 	
 while len(geos)>0:
     empty_search=False
     trovato=False
