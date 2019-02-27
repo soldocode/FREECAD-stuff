@@ -33,7 +33,7 @@ COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-
              'S300-1191A_00.2':{'name':'Piastrina supporto ripari L=20'},
              'S300-1126B':{'name':'Blocchetti 30x20x10 filettati'}}
 PARTS={}
-DWG={'SHEETS':{'THK':{}},'PROFILE':{},'COMPONENTS':{}}
+DWG={'SHEET':{'THK':{}},'PROFILE':{},'COMPONENT':{}}
 
 
 def is_in_POSSIBLE_HEA(obj):
@@ -135,6 +135,9 @@ def deconstruct_object(obj):
  weight=round(obj.Shape.Volume*0.0000079,1)
  part_name='indefinito'
  classified=False
+ thk=0
+ paths=None
+ me_class='INDEFINED'
  for c in COMMON_COMP:
      if c in obj.Label:
        part_name=COMMON_COMP[c]['name']
@@ -202,6 +205,7 @@ def deconstruct_object(obj):
                       if e.Length>lenght:lenght=e.Length
           
           part_name= "Tubo tondo diam."+str(diam)+"x"+str(dd[0])+" L="+str(lenght)
+          me_class="PROFILE"
           classified=True
 
   
@@ -266,6 +270,7 @@ def deconstruct_object(obj):
          if hea[0]==True:
              print (hea[1])
              part_name='HEA '+str(hea[1][0])+' L='+str(round(hea[1][2]))+' ('+str(weight)+')'
+             me_class="PROFILE"
              classified=True
 
      ##### is it a rect/square tube? #####
@@ -277,10 +282,13 @@ def deconstruct_object(obj):
          lenght=max_found_len(list(four_faces[0]),faces_tree['Plane'])
          if size1==size2:
              part_name= "Tubo quadro "+str(size1)+"x"+str(thk)+" L="+str(lenght)
+             me_class="PROFILE"
          elif size1>size2:
              part_name= "Tubo rettangolare "+str(size1)+"x"+str(size2)+"x"+str(thk)+" L="+str(lenght)
+             me_class="PROFILE"
          else:
              part_name= "Tubo rettangolare "+str(size2)+"x"+str(size1)+"x"+str(thk)+" L="+str(lenght)
+             me_class="PROFILE"
      ##### is it a UNP profile? #####
      elif len(two_faces)==2:
          size1=int(max_faces_distance(list(two_faces[0]),faces_tree['Plane']))
@@ -290,9 +298,11 @@ def deconstruct_object(obj):
          if size1>size2 and size1 in POSSIBLE_UNP:
              classifed=True
              part_name= "UNP "+str(size1)+" L="+str(lenght)
+             me_class="PROFILE"
          elif size2 in POSSIBLE_UNP:
              classifed=True
              part_name= "UNP "+str(size2)+" L="+str(lenght)
+             me_class="PROFILE"
 
   
   ### find thickness
@@ -315,6 +325,7 @@ def deconstruct_object(obj):
 
     if thk in POSSIBLE_THK:
           part_name= 'Sagoma sp. '+str(thk)+' mm'
+          me_class="SHEET"
 
     weight=round(obj.Shape.Volume*0.0000079,1)
     part_name+=' ('+str(weight)+'kg)'
@@ -332,6 +343,7 @@ def deconstruct_object(obj):
             cp.rotate(FreeCAD.Vector(0,0,0),FreeCAD.Vector(0,0,1),90)
         gg=geos_from_face(cp)
         paths=g2.PathsFromGeos(gg['geos'],gg['nodes'])
+        
     
         
         
@@ -350,10 +362,6 @@ def deconstruct_object(obj):
                         f2=faces[adc[ad][0]]
                         e1= f1.OuterWire.Edges[ad]
                         e2= f2.OuterWire.Edges[adc[ad][1]]
-                        #fac.append(e1)
-                        #fac.append(e2)
-                        #fp=e1.Curve.StartPoint
-                        #ep=e1.Curve.EndPoint
                         fp=e1.Vertexes[0]
                         ep=e1.Vertexes[1]
                         dx=round(fp.X-ep.X,3)
@@ -369,10 +377,13 @@ def deconstruct_object(obj):
  if part_name in PARTS:
      PARTS[part_name]['count']+=1
      PARTS[part_name]['objects'].append(obj.Label)
-     PARTS[part_name]['weight']=weight
-     PARTS[part_name]['makEasy']=None
  else:
-     PARTS[part_name]={'count':1,'objects':[obj.Label],'weight':weight,'makEasy':None}
+     PARTS[part_name]={'count':1,
+                       'objects':[obj.Label],
+                       'weight':weight,
+                       'class':me_class,
+                       'paths':paths,
+                       'thk':thk}
  return
 
 

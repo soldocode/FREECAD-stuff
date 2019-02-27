@@ -19,9 +19,17 @@ ap={}
 for p in paths:
     ap[p.area]=p
 
+bigger=ap[sorted(ap)[-1]]
+t=bigger.boundBox.bottomleft
+tX=-t.x
+tY=-t.y
+bigger.traslateXY(tX,tY)
+
+
 dr=g2.Drawing()
 conta=0
 for p in paths:
+    #p.traslateXY(tX,tY)
     for i in range(0,len(p.geometries)):
         g=p.geo(i)   
         print(g)
