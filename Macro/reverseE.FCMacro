@@ -58,8 +58,8 @@ def is_in_POSSIBLE_HEA(obj):
                 if round(bb[0],4)==c[0] and round(bb[1],4)==c[1]:
                     found=True
                     result=[True,list(bb)]
-                    print (result)
-                    print (ax)           
+                    #print (result)
+                    #print (ax)           
     return result 
 
 def is_in_POSSIBLE_RECT_TUBE(obj):
@@ -122,16 +122,16 @@ def deconstruct_object(obj):
           if (equal_center) and (abs(blend_thk)==thk):
              nblend+=1
              not_found=False
-             print ('bt ',blend_thk)
-             print ('blend faces...: ',s1,' and ',c_surf[ind])
-             print (c1.Surface.Axis)
-             print (c2.Surface.Axis)
+             #print ('bt ',blend_thk)
+             #print ('blend faces...: ',s1,' and ',c_surf[ind])
+             #print (c1.Surface.Axis)
+             #print (c2.Surface.Axis)
              blend_faces.append(s1)
              blend_faces.append(c_surf[ind])
           ind+=1
     return blend_faces
 
-
+ print ('... sto analizzando '+obj.Label+'...')
  weight=round(obj.Shape.Volume*0.0000079,1)
  part_name='indefinito'
  classified=False
@@ -150,7 +150,7 @@ def deconstruct_object(obj):
   b_part=[]
   
   fnum=len(faces)
-  print ('Number of faces:',fnum)
+  #print ('Number of faces:',fnum)
 
   ### create color tree
   actcolor=sel.Object.ViewObject.DiffuseColor[0]
@@ -173,7 +173,7 @@ def deconstruct_object(obj):
          eight_bigger_faces.append(faces_areas[eight_top_areas[index]][i])
          count+=1
      index+=1
-  print ('ebf:',eight_bigger_faces)
+  #print ('ebf:',eight_bigger_faces)
   classified=False
 
   ##### is it round tube? #####
@@ -233,7 +233,7 @@ def deconstruct_object(obj):
                  matched_count+=1
                  matched.append(i)
          matched.append(sample)
-         print  ('mached_count:',matched_count)   
+         #print  ('mached_count:',matched_count)   
          if matched_count==6:
              six_faces.append(matched)
          if matched_count==4:
@@ -266,9 +266,9 @@ def deconstruct_object(obj):
          faces_tree=build_tree(faces)
          f1=faces_tree['Plane'][four_faces[0][0]]
          hea=is_in_POSSIBLE_HEA(obj)
-         print (hea)
+         #print (hea)
          if hea[0]==True:
-             print (hea[1])
+             #print (hea[1])
              part_name='HEA '+str(hea[1][0])+' L='+str(round(hea[1][2]))+' ('+str(weight)+')'
              me_class="PROFILE"
              classified=True
@@ -321,7 +321,7 @@ def deconstruct_object(obj):
  
    if same_geometry:
     thk=round(f1.distToShape(f2)[0],1)
-    print ('thk: ',thk)
+    #print ('thk: ',thk)
 
     if thk in POSSIBLE_THK:
           part_name= 'Sagoma sp. '+str(thk)+' mm'
@@ -336,8 +336,9 @@ def deconstruct_object(obj):
     if nblend==1: part_name+=" con nr "+str(nblend)+" piega"
     if nblend>1: part_name+=" con nr "+str(nblend)+" pieghe"
 
-    if nblend==0:
-        cp=Part.Face(faces[eight_bigger_faces[0]].Wires)
+    #if nblend==0:
+    cp=Part.Face(faces[eight_bigger_faces[0]].Wires)
+    if cp.Surface.__str__()=="<Plane object>":
         align_face_to_Zplane(cp)
         if cp.BoundBox.XLength<cp.BoundBox.YLength:
             cp.rotate(FreeCAD.Vector(0,0,0),FreeCAD.Vector(0,0,1),-90)
@@ -349,12 +350,12 @@ def deconstruct_object(obj):
         #print 'find adjacent...maybe..',eight_bigger_faces
         contacts=find_adjacent(faces,eight_bigger_faces[0])
         adc=contacts[eight_bigger_faces[0]]
-        print ('adc:',adc)
+        #print ('adc:',adc)
         if eight_bigger_faces[0] in faces_tree['Plane']:
             for b in blend_faces:
                 for ad in adc:
                     if b==adc[ad][0]:
-                        print (' Trovato!!!' ,adc[ad])
+                        #print (' Trovato!!!' ,adc[ad])
                         f1=faces[eight_bigger_faces[0]]
                         f2=faces[adc[ad][0]]
                         e1= f1.OuterWire.Edges[ad]
@@ -365,8 +366,8 @@ def deconstruct_object(obj):
                         dy=round(fp.Y-ep.Y,3)
                         dz=round(fp.Z-ep.Z,3)
                         a=angle_between_planes(f1,f2)
-                        print (angle_to_Z(f1))
-                        print ('deltas:',dx,'|',dy,'|',dz,'->',a)
+                        #print (angle_to_Z(f1))
+                        #print ('deltas:',dx,'|',dy,'|',dz,'->',a)
     
  ### find adjacents faces 
  #find_adjacent(planes)
