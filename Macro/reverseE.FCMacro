@@ -12,9 +12,11 @@
 
 from FreeCAD import Vector,Placement,Rotation
 import pprint
+from io import StringIO
 import math
 import g2
 import makEasy
+import json
 from MeFunctions import *
 from PySide import QtGui
 VARS=[]
@@ -130,6 +132,7 @@ def deconstruct_object(obj):
              blend_faces.append(c_surf[ind])
           ind+=1
     return blend_faces
+
 
  print ('... sto analizzando '+obj.Label+'...')
  weight=round(obj.Shape.Volume*0.0000079,1)
@@ -399,9 +402,11 @@ for sel in sels:
             #print "Object ", obj.Label
             count+=1
             deconstruct_object(obj)
-print ('Rilevati nr ',count,' oggetti')
-for item in PARTS:
-    print (item+'  |  '+str(PARTS[item]['count']))
+
+#print ('Rilevati nr ',count,' oggetti')
+#for item in PARTS:
+#    print (item+'  |  '+str(PARTS[item]['count']))
+
 
 #salva disegni
 DWG={'SHEET':{'THK':{}},'PROFILE':{},'COMPONENT':{}}
@@ -443,8 +448,15 @@ for item in PARTS:
 base_path='\\10.0.0.199\Archivio\COMMESSE'
 dir = QtGui.QFileDialog.getExistingDirectory(None, 'Seleziona commessa', base_path, QtGui.QFileDialog.ShowDirsOnly)
 
+
 for t in DWG['SHEET']['THK']:
     output_dxf=DWG['SHEET']['THK'][t]['Drawing'].getDXF()
     f=open(dir+'/SP'+str(int(t))+'.dxf',"w")
     f.write(output_dxf)
     f.close()
+
+
+s=pprint.pformat(PARTS, indent=4)
+f=open(dir+'/ElencoParti.txt',"w")
+f.write(s)
+f.close()
