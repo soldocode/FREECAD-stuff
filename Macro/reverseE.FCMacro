@@ -68,6 +68,8 @@ def is_in_POSSIBLE_RECT_TUBE(obj):
     result=True
     return result
 
+
+
 def deconstruct_object(obj):
 
  def build_areas_dict(faces):
@@ -132,6 +134,34 @@ def deconstruct_object(obj):
              blend_faces.append(c_surf[ind])
           ind+=1
     return blend_faces
+
+
+ def unfold_sheet(faces,eight_bigger_faces):
+    #print 'find adjacent...maybe..',eight_bigger_faces
+    contacts=find_adjacent(faces,eight_bigger_faces[0])
+    #print (contacts)
+    adc=contacts[eight_bigger_faces[0]]
+    print ('adc:',adc)
+    if eight_bigger_faces[0] in faces_tree['Plane']:
+        for b in blend_faces:
+            for ad in adc:
+                if b==adc[ad][0]:
+                    #print (' Trovato!!!' ,adc[ad])
+                    f1=faces[eight_bigger_faces[0]]
+                    f2=faces[adc[ad][0]]
+                    e1= f1.OuterWire.Edges[ad]
+                    e2= f2.OuterWire.Edges[adc[ad][1]]
+                    fp=e1.Vertexes[0]
+                    ep=e1.Vertexes[1]
+                    dx=round(fp.X-ep.X,3)
+                    dy=round(fp.Y-ep.Y,3)
+                    dz=round(fp.Z-ep.Z,3)
+                    a=angle_between_planes(f1,f2)
+                    #print (angle_to_Z(f1))
+                    #print ('deltas:',dx,'|',dy,'|',dz,'->',a)
+
+    return True
+
 
 
  print ('... sto analizzando '+obj.Label+'...')
@@ -350,27 +380,7 @@ def deconstruct_object(obj):
           
 
     if nblend>0:
-        #print 'find adjacent...maybe..',eight_bigger_faces
-        contacts=find_adjacent(faces,eight_bigger_faces[0])
-        adc=contacts[eight_bigger_faces[0]]
-        #print ('adc:',adc)
-        if eight_bigger_faces[0] in faces_tree['Plane']:
-            for b in blend_faces:
-                for ad in adc:
-                    if b==adc[ad][0]:
-                        #print (' Trovato!!!' ,adc[ad])
-                        f1=faces[eight_bigger_faces[0]]
-                        f2=faces[adc[ad][0]]
-                        e1= f1.OuterWire.Edges[ad]
-                        e2= f2.OuterWire.Edges[adc[ad][1]]
-                        fp=e1.Vertexes[0]
-                        ep=e1.Vertexes[1]
-                        dx=round(fp.X-ep.X,3)
-                        dy=round(fp.Y-ep.Y,3)
-                        dz=round(fp.Z-ep.Z,3)
-                        a=angle_between_planes(f1,f2)
-                        #print (angle_to_Z(f1))
-                        #print ('deltas:',dx,'|',dy,'|',dz,'->',a)
+        unfolded=unfold_sheet(faces,eight_bigger_faces)
     
  ### find adjacents faces 
  #find_adjacent(planes)
