@@ -35,7 +35,34 @@ COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-
              'S300-1191A_00.1':{'name':'Piastrina supporto ripari L=40'},
              'S300-1191A_00.2':{'name':'Piastrina supporto ripari L=20'},
              'S300-1126B':{'name':'Blocchetti 30x20x10 filettati'}}
-PARTS={}
+
+class Object(object):
+    def __init__(self,FCObj=None,):
+        self.FCObj=FCObj
+        self.Faces={}
+        self.Weight=round(FCObj.Shape.Volume*0.0000079,1)
+        self.PartName='indefinito'
+        self.Classified=False
+        self.meItem=None
+
+
+    def isCommonComponent(self):
+        result=False
+        for c in COMMON_COMP:
+            if c in self.FCObj.Label:
+              self.PartName=COMMON_COMP[c]['name']
+              self.Classified=True
+              self.meItem=makEasy.Item(Id=self.PartName)
+              result=True
+        return result
+
+    def isHProfile(self):
+        result=False
+        return result
+
+    def isRectTube(self):
+        result=False
+        return result
 
 
 def is_in_POSSIBLE_HEA(obj):
@@ -61,26 +88,26 @@ def is_in_POSSIBLE_HEA(obj):
                     found=True
                     result=[True,list(bb)]
                     #print (result)
-                    #print (ax)           
-    return result 
+                    #print (ax)
+    return result
 
 def is_in_POSSIBLE_RECT_TUBE(obj):
     result=True
     return result
 
 
+def areas_from_faces(faces):
+   faces_areas={}
+   for i in range(0,len(faces)):
+      area=faces[i].Area
+      if area in faces_areas:
+          faces_areas[area].append(i)
+      else:
+          faces_areas[area]=[i]
+   return faces_areas
+
 
 def deconstruct_object(obj):
-
- def build_areas_dict(faces):
-    faces_areas={}
-    for i in range(0,len(faces)):
-       area=faces[i].Area
-       if area in faces_areas:
-               faces_areas[area].append(i)
-       else:
-               faces_areas[area]=[i]
-    return faces_areas 
 
  def build_tree(faces):
      faces_tree={"Plane":{},
@@ -92,12 +119,12 @@ def deconstruct_object(obj):
        str_face=faces[i].Surface.__str__()
        if str_face=="<Cylinder object>":
            #print ("Cylinder",i," - center:",faces[i].Surface.Center)
-           c_surf[i]=faces[i]
+           #c_surf[i]=faces[i]
            faces_tree['Cylinder'][i]=faces[i]
        elif str_face=="<Plane object>":
            #print ("Plane",i," - number of edges:",len(faces[i].Edges))
-           p_surf[i]=faces[i]	
-           faces_tree['Plane'][i]=faces[i]     
+           #p_surf[i]=faces[i]
+           faces_tree['Plane'][i]=faces[i]
        elif str_face=="<Cone object>":
            #print ("Cone",i," - center",faces[i].Surface.Center)
            faces_tree['Cone'][i]=faces[i]
@@ -118,7 +145,7 @@ def deconstruct_object(obj):
           c2=faces_tree['Cylinder'][c_surf[ind]]
           blend_thk=round(c1.distToShape(c2)[0],2)
           cc1=c1.Surface.Axis
-          cc2=c2.Surface.Axis 
+          cc2=c2.Surface.Axis
           eqX=round(cc1.x, 2)==round(cc2.x, 2)
           eqY=round(cc1.y, 2)==round(cc2.y, 2)
           eqZ=round(cc1.z, 2)==round(cc2.z, 2)
@@ -165,33 +192,37 @@ def deconstruct_object(obj):
 
 
  print ('... sto analizzando '+obj.Label+'...')
+ OGG=Object(obj)
  weight=round(obj.Shape.Volume*0.0000079,1)
  part_name='indefinito'
  classified=False
  thk=0
  paths=None
  me_class='INDEFINED'
- for c in COMMON_COMP:
-     if c in obj.Label:
-       part_name=COMMON_COMP[c]['name']
-       classified=True
+ #for c in COMMON_COMP:
+ #    if c in obj.Label:
+ #      part_name=COMMON_COMP[c]['name']
+ #      classified=True
+ if OGG.isCommonComponent(): classified=True
+ print (classified)
+
  if not classified:
   faces=obj.Shape.Faces
 
-  c_surf={}
-  p_surf={}
+  #c_surf={}
+  #p_surf={}
   b_part=[]
-  
-  fnum=len(faces)
+
+  #fnum=len(faces)
   #print ('Number of faces:',fnum)
 
   ### create color tree
-  actcolor=sel.Object.ViewObject.DiffuseColor[0]
-  dcol=[]
-  for i in range (0,fnum):
-     dcol.append(actcolor)
+  #actcolor=sel.Object.ViewObject.DiffuseColor[0]
+  #dcol=[]
+  #for i in range (0,fnum):
+    # dcol.append(actcolor)
 
-  faces_areas=build_areas_dict(faces)
+  faces_areas=areas_from_faces(faces)
   faces_tree=build_tree(faces)
 
   ### Find greater faces
@@ -215,7 +246,7 @@ def deconstruct_object(obj):
   for i in range(0,4):
       if group[i] not in faces_tree['Cylinder']:
           curved_faces=False
-  
+
   if curved_faces:
       dd=[]
       for n in range (0,4):
@@ -236,12 +267,12 @@ def deconstruct_object(obj):
               for e in edges:
                   if str(e.Curve.__class__)=="<type 'Part.GeomLineSegment'>":
                       if e.Length>lenght:lenght=e.Length
-          
+
           part_name= "Tubo tondo diam."+str(diam)+"x"+str(dd[0])+" L="+str(lenght)
           me_class="PROFILE"
           classified=True
 
-  
+
   if not classified:
      six_faces=[]
      four_faces=[]
@@ -266,7 +297,7 @@ def deconstruct_object(obj):
                  matched_count+=1
                  matched.append(i)
          matched.append(sample)
-         #print  ('mached_count:',matched_count)   
+         #print  ('mached_count:',matched_count)
          if matched_count==6:
              six_faces.append(matched)
          if matched_count==4:
@@ -337,12 +368,12 @@ def deconstruct_object(obj):
              part_name= "UNP "+str(size2)+" L="+str(lenght)
              me_class="PROFILE"
 
-  
+
   ### find thickness
   if not classified:
    same_geometry=False
    group=list(eight_bigger_faces)
-   
+
    if (group[0] in faces_tree['Plane']) and (group[1] in faces_tree['Plane']):
      f1=faces_tree['Plane'][group[0]]
      f2=faces_tree['Plane'][group[1]]
@@ -350,8 +381,8 @@ def deconstruct_object(obj):
    if (group[0] in faces_tree['Cylinder']) and (group[1] in faces_tree['Cylinder']):
      f1=faces_tree['Cylinder'][group[0]]
      f2=faces_tree['Cylinder'][group[1]]
-     same_geometry=True 
- 
+     same_geometry=True
+
    if same_geometry:
     thk=round(f1.distToShape(f2)[0],1)
     #print ('thk: ',thk)
@@ -363,8 +394,8 @@ def deconstruct_object(obj):
     weight=round(obj.Shape.Volume*0.0000079,1)
     part_name+=' ('+str(weight)+'kg)'
 
-    
-    blend_faces=get_any_blends(list(faces_tree['Cylinder']))     
+
+    blend_faces=get_any_blends(list(faces_tree['Cylinder']))
     nblend=len(blend_faces)/2
     if nblend==1: part_name+=" con nr "+str(nblend)+" piega"
     if nblend>1: part_name+=" con nr "+str(nblend)+" pieghe"
@@ -377,12 +408,12 @@ def deconstruct_object(obj):
             cp.rotate(FreeCAD.Vector(0,0,0),FreeCAD.Vector(0,0,1),-90)
         gg=geos_from_face(cp)
         paths=g2.PathsFromGeos(gg['geos'],gg['nodes'])
-          
+
 
     if nblend>0:
         unfolded=unfold_sheet(faces,eight_bigger_faces)
-    
- ### find adjacents faces 
+
+ ### find adjacents faces
  #find_adjacent(planes)
 
  if part_name in PARTS:
@@ -397,7 +428,10 @@ def deconstruct_object(obj):
                        'thk':thk}
  return
 
+###############################################################################
 
+PARTS={}
+REVERSED={}
 
 print ("Let's begin...")
 pp = pprint.PrettyPrinter(indent=4)
@@ -435,7 +469,7 @@ for item in PARTS:
             gc=0
             DWG['SHEET']['THK'][t]={'Drawing':dr,'Yoffset':yo,'Gcount':gc}
             p=DWG['SHEET']['THK'][t]
-        
+
         if PARTS[item]['paths']!=None:
             np={}
             for i in PARTS[item]['paths']:
@@ -446,14 +480,14 @@ for item in PARTS:
             trY=-tr.y+yo
             bigger.traslateXY(trX,trY)
             DWG['SHEET']['THK'][t]['Yoffset']=yo+bigger.boundBox.height*1.15+200
-        
+
             for k in PARTS[item]['paths']:
                 for i in range(0,len(k.geometries)):
-                    g=k.geo(i)   
+                    g=k.geo(i)
                     #print(g)
                     dr.insertGeo(gc,g)
-                    gc+=1  
-            DWG['SHEET']['THK'][t]['Gcount']=gc  
+                    gc+=1
+            DWG['SHEET']['THK'][t]['Gcount']=gc
 
 base_path='\\10.0.0.199\Archivio\COMMESSE'
 dir = QtGui.QFileDialog.getExistingDirectory(None, 'Seleziona commessa', base_path, QtGui.QFileDialog.ShowDirsOnly)

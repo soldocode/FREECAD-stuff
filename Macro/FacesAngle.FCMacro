@@ -8,4 +8,4 @@ vns2 = s2.normalAt(0,0)
 
 alpha = math.degrees( vns1.getAngle( vns2 ) )
 
-print 'angle between faces:',alpha
+print ('angle between faces:',alpha)
