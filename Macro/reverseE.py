@@ -17,6 +17,7 @@ import math
 import g2
 import makEasy
 import json
+import xlsxwriter
 from MeFunctions import *
 from PySide import QtGui
 VARS=[]
@@ -35,6 +36,29 @@ COMMON_COMP={'RIDUZIONE_CONCENTRICA_114_76':{'name':'Riduzione concentrica D114-
              'S300-1191A_00.1':{'name':'Piastrina supporto ripari L=40'},
              'S300-1191A_00.2':{'name':'Piastrina supporto ripari L=20'},
              'S300-1126B':{'name':'Blocchetti 30x20x10 filettati'}}
+
+
+
+# Function to find Longest Common Sub-string
+
+from difflib import SequenceMatcher
+
+def longestSubstring(str1,str2):
+
+    result=''
+	# initialize SequenceMatcher object with
+	# input string
+    seqMatch = SequenceMatcher(None,str1,str2)
+
+	# find match of longest sub-string
+	# output will be like Match(a=0, b=0, size=5)
+    match = seqMatch.find_longest_match(0, len(str1), 0, len(str2))
+
+	# print longest substring
+    if (match.size!=0):
+        result= (str1[match.a: match.a + match.size])
+    return result
+
 
 class Object(object):
     def __init__(self,FCObj=None,):
@@ -382,7 +406,6 @@ def deconstruct_object(obj):
 ###############################################################################
 
 PARTS={}
-REVERSED={}
 
 print ("Let's begin...")
 pp = pprint.PrettyPrinter(indent=4)
@@ -396,7 +419,12 @@ for sel in sels:
         if obj.Shape.Volume>0:
             #print "Object ", obj.Label
             count+=1
-            deconstruct_object(obj)
+            try:
+                deconstruct_object(obj)
+                #break
+            except Exception as err:
+                print("Error on ",obj.Label,": ",err)
+
 
 #print ('Rilevati nr ',count,' oggetti')
 #for item in PARTS:
@@ -455,3 +483,30 @@ s=pprint.pformat(PARTS, indent=4)
 f=open(dir+'/ElencoParti.txt',"w")
 f.write(s)
 f.close()
+
+# Create an new Excel file and add a worksheet.
+workbook = xlsxwriter.Workbook(dir+'/DistintaParti.xlsx')
+worksheet = workbook.add_worksheet()
+worksheet.set_column('A:A', 45)
+worksheet.write(0, 0,'NOME')
+worksheet.write(0, 1,'PEZZI')
+worksheet.write(0, 2,'PESO')
+worksheet.write(0, 3,'KG TOT')
+row=1
+for p in PARTS:
+    worksheet.write(row, 0, p)
+    worksheet.write(row, 1, PARTS[p]['count'])
+    worksheet.write(row, 2, PARTS[p]['weight'])
+    worksheet.write_formula(row, 3, '=B'+str(row+1)+'*C'+str(row+1))
+    row+=1
+worksheet.write(row, 0, 'TOTALI')
+worksheet.write_formula(row, 1, '=SUM(B2:B'+str(row))
+worksheet.write_formula(row, 3, '=SUM(D2:D'+str(row))
+workbook.close()
+
+#f=open(dir+'/DistintaParti.txt',"w")
+#for p in PARTS:
+#    wl=p+'|'+str(PARTS[p]['count'])+'|'+str(PARTS[p]['weight'])
+#    f.write(wl+"\n")
+#    print (wl)
+#f.close()
