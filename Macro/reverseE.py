@@ -60,52 +60,6 @@ def longestSubstring(str1,str2):
     return result
 
 
-class Object(object):
-    def __init__(self,FCObj=None,):
-        self.FCObj=FCObj
-        self.Faces={}
-        self.Weight=round(FCObj.Shape.Volume*0.0000079,1)
-        self.PartName='indefinito'
-        self.Classified=False
-        self.meItem=None
-
-
-    def isCommonComponent(self):
-        result=False
-        for c in COMMON_COMP:
-            if c in self.FCObj.Label:
-              self.PartName=COMMON_COMP[c]['name']
-              self.Classified=True
-              self.meItem=makEasy.Item(Id=self.PartName)
-              result=True
-        return result
-
-    def parse(self):
-        self.Faces=self.FCObj.Shape.Faces
-        self.FacesByArea=get_faces_by_area(self.Faces)
-        self.FacesTree=build_faces_tree(self.Faces)
-        self.setEightBiggerFaces()
-
-    def setEightBiggerFaces(self):
-        self.EightBiggerFaces=[]
-        eight_top_areas=sorted(self.FacesByArea,reverse=True)[:8]
-        count=0
-        index=0
-        while (count<8) and (index<len(eight_top_areas)):
-           for i in range (0,len(self.FacesByArea[eight_top_areas[index]])):
-               self.EightBiggerFaces.append(self.FacesByArea[eight_top_areas[index]][i])
-               count+=1
-           index+=1
-
-    def isHProfile(self):
-        result=False
-        return result
-
-    def isRectTube(self):
-        result=False
-        return result
-
-
 def is_in_POSSIBLE_HEA(obj):
     keys=list(POSSIBLE_HEA.keys())
     result=[False]
@@ -171,7 +125,10 @@ def deconstruct_object(obj):
     return blend_faces
 
 
- def unfold_sheet(faces,eight_bigger_faces):
+ #def unfold_sheet(faces,eight_bigger_faces):
+ def unfold_sheet(ogg):
+    faces=ogg.Faces
+    eight_bigger_faces=ogg.EightBiggerFaces
     #print 'find adjacent...maybe..',eight_bigger_faces
     contacts=find_adjacent(faces,eight_bigger_faces[0])
     #print (contacts)
@@ -200,25 +157,25 @@ def deconstruct_object(obj):
 
 
  print ('... sto analizzando '+obj.Label+'...')
- OGG=Object(obj)
+ OGG=FCObject(obj)
  part_name='indefinito'
  classified=False
  thk=0
  paths=None
  me_class='INDEFINED'
 
- if OGG.isCommonComponent(): classified=True
+ if OGG._isCommonComponent(COMMON_COMP): classified=True
  print (classified)
 
  if not classified:
   faces=obj.Shape.Faces
   OGG.parse()
-  eight_bigger_faces=OGG.EightBiggerFaces
+  #eight_bigger_faces=OGG.EightBiggerFaces
   classified=False
 
   ##### is it round tube? #####
   curved_faces=True
-  group=list(eight_bigger_faces)
+  group=list(OGG.EightBiggerFaces)
   for i in range(0,4):
       if group[i] not in OGG.FacesTree['Cylinder']:
           curved_faces=False
@@ -226,9 +183,9 @@ def deconstruct_object(obj):
   if curved_faces:
       dd=[]
       for n in range (0,4):
-          nn=eight_bigger_faces[n]
+          nn=OGG.EightBiggerFaces[n]
           for m in range (0,4):
-              mm=eight_bigger_faces[m]
+              mm=OGG.EightBiggerFaces[m]
               dist=round(OGG.FacesTree['Cylinder'][mm].distToShape(OGG.FacesTree['Cylinder'][nn])[0],2)
               if dist not in dd: dd.append(dist)
       if len(dd)==2:
@@ -236,7 +193,7 @@ def deconstruct_object(obj):
           diam=0
           lenght=0
           for i in range (0,4):
-              ff=OGG.FacesTree['Cylinder'][eight_bigger_faces[i]]
+              ff=OGG.FacesTree['Cylinder'][OGG.EightBiggerFaces[i]]
               d=ff.Surface.Radius*2
               if d>diam:diam=d
               edges=ff.OuterWire.Edges
@@ -257,7 +214,7 @@ def deconstruct_object(obj):
      group=[]
      #print faces_tree['Plane'].keys()
      #print eight_bigger_faces
-     for g in list(eight_bigger_faces):
+     for g in list(OGG.EightBiggerFaces):
         if g in OGG.FacesTree['Plane'].keys():
           pface_count+=1
           group.append(g)
@@ -348,7 +305,7 @@ def deconstruct_object(obj):
   ### find thickness
   if not classified:
    same_geometry=False
-   group=list(eight_bigger_faces)
+   group=list(OGG.EightBiggerFaces)
 
    if (group[0] in OGG.FacesTree['Plane']) and (group[1] in OGG.FacesTree['Plane']):
      f1=OGG.FacesTree['Plane'][group[0]]
@@ -371,12 +328,13 @@ def deconstruct_object(obj):
 
 
     blend_faces=get_any_blends(list(OGG.FacesTree['Cylinder']))
+    #OGG._getAnyBlends()
     nblend=len(blend_faces)/2
     if nblend==1: part_name+=" con nr "+str(nblend)+" piega"
     if nblend>1: part_name+=" con nr "+str(nblend)+" pieghe"
 
     #if nblend==0:
-    cp=Part.Face(faces[eight_bigger_faces[0]].Wires)
+    cp=Part.Face(faces[OGG.EightBiggerFaces[0]].Wires)
     if cp.Surface.__str__()=="<Plane object>":
         align_face_to_Zplane(cp)
         if cp.BoundBox.XLength<cp.BoundBox.YLength:
@@ -386,10 +344,8 @@ def deconstruct_object(obj):
 
 
     if nblend>0:
-        unfolded=unfold_sheet(faces,eight_bigger_faces)
+        unfolded=unfold_sheet(OGG)
 
- ### find adjacents faces
- #find_adjacent(planes)
 
  if part_name in PARTS:
      PARTS[part_name]['count']+=1
