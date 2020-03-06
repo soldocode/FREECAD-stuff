@@ -1,7 +1,14 @@
 ### Soldini Riccardo - 31/07/2018 ###
+import FreeCAD as FC
 
-sel=Gui.Selection.getSelectionEx()[0]
-face=sel.SubObjects[0]
-
-copy_face = Part.Face(face.Wires)
-Part.show(copy_face)
+sels=Gui.Selection.getSelectionEx()
+doc=FC.newDocument()
+for sel in sels:
+     if hasattr(sel.Object,"Shape"):
+        gp=sel.Object.getGlobalPlacement()
+        #print (sel.Object.Label,'-->',sel.Object.getGlobalPlacement())
+        copied=doc.copyObject(sel.Object,True)
+        copied.Placement=gp
+       
+Gui.ActiveDocument=doc
+Gui.SendMsgToActiveView("ViewFit")
