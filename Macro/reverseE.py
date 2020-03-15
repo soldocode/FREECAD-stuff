@@ -19,6 +19,7 @@ import makEasy
 import json
 import xlsxwriter
 from MeFunctions import *
+from MeFreeCADClasses import *
 from PySide import QtGui
 VARS=[]
 
@@ -94,7 +95,7 @@ def is_in_POSSIBLE_RECT_TUBE(obj):
 def deconstruct_object(obj):
 
 
- def get_any_blends(c_surf):
+ def get_any_blends(c_surf):# da togliere !!!!
     #c_surf=list(faces_tree['Cylinder'])
     nblend=0
     blend_faces=[]
