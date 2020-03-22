@@ -131,8 +131,8 @@ def deconstruct_object(obj):
     faces=ogg.Faces
     eight_bigger_faces=ogg.EightBiggerFaces
     #print 'find adjacent...maybe..',eight_bigger_faces
-    contacts=find_adjacent(faces,eight_bigger_faces[0])
-    #print (contacts)
+    contacts=faces_map(faces,eight_bigger_faces[0])['Map']
+    print (contacts)
     adc=contacts[eight_bigger_faces[0]]
     print ('adc:',adc)
     if eight_bigger_faces[0] in OGG.FacesTree['Plane']:
@@ -253,7 +253,7 @@ def deconstruct_object(obj):
          newplace = Placement(pos,rot,Vector(0,0,0))
          obj.Placement = newplace
          faces=obj.Shape.Faces
-         OGG.FacesTree=build_faces_tree(faces)
+         OGG.FacesTree=build_faces_tree(faces,OGG.FacesMap['Faces'])
          f1=OGG.FacesTree['Plane'][four_faces[0][0]]
          za=angle_to_Y(f1)
          pos = obj.Placement.Base
@@ -261,7 +261,7 @@ def deconstruct_object(obj):
          newplace = Placement(pos,rot,Vector(0,0,0))
          obj.Placement = newplace
          faces=obj.Shape.Faces
-         OGG.FacesTree=build_faces_tree(faces)
+         OGG.FacesTree=build_faces_tree(faces,OGG.FacesMap['Faces'])
          f1=OGG.FacesTree['Plane'][four_faces[0][0]]
          hea=is_in_POSSIBLE_HEA(obj)
          #print (hea)

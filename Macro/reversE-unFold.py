@@ -27,7 +27,7 @@ OGG=FCObject(obj)
 OGG.parse()
 OGG._getThickness()
 OGG._getAnyBlends()
-OGG._getFacesMap()
+#OGG._getFacesMap()
 
 sheet_tree=FCTreeSheet(OGG)
 
@@ -54,13 +54,12 @@ while (not tree_filled) and (id_key<len(aa)):
         print(block[0],compare[0])
     elif len(block)==2:
         f1=OGG.Faces[block[0]]
-        f2=OGG.Faces[block[1]]    
+        f2=OGG.Faces[block[1]]
         print(block[0],block[1])
     #print(block,'-',len(block))
     #print(compare,'-',len(compare))
     #f1=OGG.Faces[block[0]]
     #f2=OGG.Faces[compare[0]]
-    print('thk:',round(f1.distToShape(f2)[0],1)) 
+    print('thk:',round(f1.distToShape(f2)[0],1))
     id_key+=1
 #thk=round(f1.distToShape(f2)[0],1)
-
