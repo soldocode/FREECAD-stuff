@@ -1,0 +1,29 @@
+
+
+import FreeCAD as FC
+
+def changeColor(object,scope,new_color):
+	actual_color=object.ViewObject.DiffuseColor[0]
+	num_faces=len(object.Shape.Faces)
+	col_array=[actual_color]*num_faces
+
+	for c in scope:
+		col_array[c]=new_color
+
+	object.ViewObject.DiffuseColor=col_array	
+
+
+
+sel=Gui.Selection.getSelectionEx()[0]
+changeColor(sel.Object, [229, 232],(0.5,0.1,0.2))
+
+#actual_color=sel.Object.ViewObject.DiffuseColor[0]
+#num_faces=len(sel.Object.Shape.Faces)
+#col_array=[actual_color]*num_faces
+
+#new_color=(0.5,0.1,0.2)
+#new_col_array=[2,5,4]
+#for c in new_col_array:
+	#col_array[c]=new_color
+
+#sel.Object.ViewObject.DiffuseColor=col_array
