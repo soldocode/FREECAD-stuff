@@ -1,6 +1,9 @@
 count=0
+weight=0
 for obj in FreeCAD.ActiveDocument.Objects:
     if hasattr(obj,"Shape"):
         print ("Object ", obj.Label)
         count+=1
+        weight+=round(obj.Shape.Volume*0.0000079,1)
 print ('Rilevati nr ',count,' oggetti')
+print('Peso totale: ',weight,' kg')
