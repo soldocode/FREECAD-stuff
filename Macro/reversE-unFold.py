@@ -26,7 +26,7 @@ obj=sel.Object
 OGG=FCObject(obj)
 OGG.parse()
 OGG._getThickness()
-OGG._getAnyBlends()
+OGG._getAnyBends()
 #OGG._getFacesMap()
 
 sheet_tree=FCTreeSheet(OGG)
@@ -38,28 +38,37 @@ for t in OGG.FacesMap:
 root=list(OGG.FacesMap.keys())[0]
 #area=OGG.Faces[root].Area
 #ff=list(OGG.FacesByArea)
-aa=sorted(OGG.FacesByArea,reverse=True)
+fba=get_faces_by_area(OGG.Faces,OGG.FacesMap['Faces'])
+af=sorted(fba,reverse=True)
 tree_filled=False
 id_key=0
-while (not tree_filled) and (id_key<len(aa)):
-    #verifica se il blocco è multiplo
-    id_block=aa[id_key]
-    block=OGG.FacesByArea[id_block]
-    if len(block)==1 and (id_key<len(aa)-1):
-        id_key+=1
-        id_compare=aa[id_key]
-        compare=OGG.FacesByArea[id_compare]
-        f1=OGG.Faces[block[0]]
-        f2=OGG.Faces[compare[0]]
-        print(block[0],compare[0])
-    elif len(block)==2:
-        f1=OGG.Faces[block[0]]
-        f2=OGG.Faces[block[1]]
-        print(block[0],block[1])
-    #print(block,'-',len(block))
-    #print(compare,'-',len(compare))
-    #f1=OGG.Faces[block[0]]
-    #f2=OGG.Faces[compare[0]]
-    print('thk:',round(f1.distToShape(f2)[0],1))
-    id_key+=1
+while (not tree_filled) and (id_key<len(af)):
+	id_block=af[id_key]
+	block=OGG.FacesByArea[id_block]
+	idf1=block[0]
+	found=False
+	#for bf in OGG.BendedFaces:
+	#	if idf1 == bf[0]:
+	#		af.remove(bf[1])
+	#		print('thk:',OGG.Thk,' ->',bf[0],'-',bf[1],' - bend')
+	#		found=True
+	#	elif idf1==bf[1]:
+	#		af.remove(bf[0])
+	#		print('thk:',OGG.Thk,' ->',bf[1],'-',bf[0],' - bend')
+    #        found=True
+	if not found:
+		if len(block)==1 and (id_key<len(af)-1):
+			id_key+=1
+			id_next_block=af[id_key]
+			next_block=OGG.FacesByArea[id_next_block]
+			idf2=next_block[0]
+		elif len(block)==2:
+			idf2=block[1]
+
+		f1=OGG.Faces[idf1]
+		f2=OGG.Faces[idf2]
+		dist=round(f1.distToShape(f2)[0],1)
+		if dist==OGG.Thk:
+			print('thk:',dist,' ->',idf1,'-',idf2)
+	id_key+=1
 #thk=round(f1.distToShape(f2)[0],1)
