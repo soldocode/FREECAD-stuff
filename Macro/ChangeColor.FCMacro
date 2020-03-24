@@ -12,18 +12,9 @@ def changeColor(object,scope,new_color):
 
 	object.ViewObject.DiffuseColor=col_array	
 
-
+SCOPE=[7,16,6,1,13]
+COLOR=(0.8,0.2,0.2)
 
 sel=Gui.Selection.getSelectionEx()[0]
-changeColor(sel.Object, [229, 232],(0.5,0.1,0.2))
+changeColor(sel.Object, SCOPE,COLOR)
 
-#actual_color=sel.Object.ViewObject.DiffuseColor[0]
-#num_faces=len(sel.Object.Shape.Faces)
-#col_array=[actual_color]*num_faces
-
-#new_color=(0.5,0.1,0.2)
-#new_col_array=[2,5,4]
-#for c in new_col_array:
-	#col_array[c]=new_color
-
-#sel.Object.ViewObject.DiffuseColor=col_array
