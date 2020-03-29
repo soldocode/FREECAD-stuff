@@ -19,7 +19,7 @@ from PySide import QtGui
 
 
 
-def get_branches_from_face(face_up_from,map,couples):
+def get_branches(face_up_from,map,couples):
 
 	next_calls=[]
 	branches=[]
@@ -61,10 +61,9 @@ def get_branches_from_face(face_up_from,map,couples):
 	c=list(couples)
 	c.remove(couple)
 	for n in next_calls:
-		branches+=get_branches_from_face(n,map,c)
+		branches+=get_branches(n,map,c)
 
 	return branches
-
 
 
 
@@ -82,31 +81,17 @@ OGG._getAnyBends()
 sheet_tree=FCTreeSheet(OGG)
 
 planes=[]
-
-#for t in OGG.FacesMap:
-	#print(t,'-->',OGG.FacesMap[t])
-
 root=list(OGG.FacesMap.keys())[0]
-#area=OGG.Faces[root].Area
-#ff=list(OGG.FacesByArea)
 fba=get_faces_by_area(OGG.Faces,OGG.FacesMap['Faces'])
 af=sorted(fba,reverse=True)
-tree_filled=False
+#tree_filled=False
 id_key=0
-while (not tree_filled) and (id_key<len(af)):
+#while (not tree_filled) and (id_key<len(af)):
+while id_key<len(af):
 	id_block=af[id_key]
 	block=OGG.FacesByArea[id_block]
 	idf1=block[0]
 	found=False
-	#for bf in OGG.BendedFaces:
-	#	if idf1 == bf[0]:
-	#		af.remove(bf[1])
-	#		print('thk:',OGG.Thk,' ->',bf[0],'-',bf[1],' - bend')
-	#		found=True
-	#	elif idf1==bf[1]:
-	#		af.remove(bf[0])
-	#		print('thk:',OGG.Thk,' ->',bf[1],'-',bf[0],' - bend')
-    #        found=True
 	if not found:
 		if len(block)==1 and (id_key<len(af)-1):
 			id_key+=1
@@ -132,5 +117,5 @@ print('bends:',OGG.BendedFaces)
 planes+=OGG.BendedFaces
 
 branches=[]
-branches=get_branches_from_face(planes[0][0],OGG.FacesMap['Map'],planes)
-print (branches)
+#branches=get_branches(planes[0][0],OGG.FacesMap['Map'],planes)
+#print (branches)
