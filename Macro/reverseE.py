@@ -430,7 +430,7 @@ dir = QtGui.QFileDialog.getExistingDirectory(None, 'Seleziona commessa', base_pa
 
 
 for t in DWG['SHEET']['THK']:
-    output_dxf=DWG['SHEET']['THK'][t]['Drawing'].getDXF()
+    output_dxf=DWG['SHEET']['THK'][t]['Drawing'].toDXF()
     f=open(dir+'/SP'+str(int(t))+'.dxf',"w")
     f.write(output_dxf)
     f.close()
