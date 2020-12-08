@@ -19,6 +19,8 @@ from PySide import QtGui
 import FreeCAD as FC
 import Part
 
+def rotateObj(obj,axis,rotationPoint,angle):
+    return Placement(Vector(0,0,0), Rotation(axis,angle),rotationPoint).multiply(obj.Placement)
 
 print ("Let's begin...")
 pp = pprint.PrettyPrinter(indent=4)
@@ -68,6 +70,8 @@ for b in sheet_tree.Branches:
        vns1 = face1.normalAt(0,0)
        vns2 = face2.normalAt(0,0)
        alpha = math.degrees( vns1.getAngle( vns2 ) )
-       print ('angle of bend:',alpha)     
+       print ('angle of bend:',alpha)   
+       f_up.Placement=rotateObj(f_up,bb.Axis,p1,90.0)
+       
        
 Gui.SendMsgToActiveView("ViewFit")

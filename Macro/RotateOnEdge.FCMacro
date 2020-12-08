@@ -1,4 +1,8 @@
-from FreeCAD import Vector,Rotation
+from FreeCAD import Vector,Rotation,Placement
+
+def rotateObj(obj,axis,rotationPoint,angle):
+    return Placement(Vector(0,0,0), Rotation(axis,angle),rotationPoint).multiply(obj.Placement)
+   
 
 sel=Gui.Selection.getSelectionEx()[0]
 edge=sel.SubObjects[0]
@@ -8,4 +12,5 @@ print ('punto2:',round(v[1].X,2),round(v[1].Y,2),round(v[1].Z,2))
 asse=Vector(v[0].X-v[1].X,v[0].Y-v[1].Y,v[0].Z-v[1].Z).normalize()
 print (asse)
 obj=sel.Object
-obj.Placement=Placement(Vector(0,0,0), Rotation(asse,1.0),v[0].Point).multiply(obj.Placement)
+#obj.Placement=Placement(Vector(0,0,0), Rotation(asse,10.0),v[0].Point).multiply(obj.Placement)
+obj.Placement=rotateObj(obj,asse,v[0].Point,45):
