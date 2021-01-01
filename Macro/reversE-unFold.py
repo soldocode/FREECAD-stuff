@@ -19,8 +19,28 @@ from PySide import QtGui
 import FreeCAD as FC
 import Part
 
+
 def rotateObj(obj,axis,rotationPoint,angle):
-    return Placement(Vector(0,0,0), Rotation(axis,angle),rotationPoint).multiply(obj.Placement)
+    return Placement(FC.Vector(0,0,0), Rotation(axis,angle),rotationPoint).multiply(obj.Placement)
+
+def toDict(ts):
+    result={} 
+    for b in ts.Branches:
+        vals={}
+        branch=ts.Branches[b]
+        vals['Class']=branch.Class
+        vals['Angle']=branch.Angle
+        vals['Axis']=branch.Axis
+        vals['FaceUp']=branch.FaceUp
+        vals['FaceDown']=branch.FaceDown
+        result[b]=vals
+    return result 
+
+
+def unBend(bt,id_curve):
+      print ('unbend curve ',id_curve)
+      return
+
 
 print ("Let's begin...")
 pp = pprint.PrettyPrinter(indent=4)
@@ -72,6 +92,7 @@ for b in sheet_tree.Branches:
        alpha = math.degrees( vns1.getAngle( vns2 ) )
        print ('angle of bend:',alpha)   
        f_up.Placement=rotateObj(f_up,bb.Axis,p1,90.0)
-       
+ 
+pp.pprint(toDict(sheet_tree))     
        
 Gui.SendMsgToActiveView("ViewFit")

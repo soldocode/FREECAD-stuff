@@ -1,0 +1,29 @@
+from importlib import reload
+reload(MeFunctions)
+from  MeFunctions import face_to_g2Shape 
+
+sel=Gui.Selection.getSelectionEx()[0]
+face=sel.SubObjects[0]
+
+shape=face_to_g2Shape(face)
+
+dr=g2.Drawing()
+p_int=[]
+conta=1
+dr.insertPath(conta, shape.outline)
+for i in shape.internal:
+    conta+=1
+    dr.insertPath(conta,i)
+ 
+output_dxf=dr.toDXF()
+#filename=QtGui.QFileDialog.getSaveFileName(None,"Salva DXF", "", ".DXF")
+#f=open(filename[0],"w")
+#f.write(output_dxf)
+#f.close()
+
+
+output_svg=dr.toSVG()
+#filename=QtGui.QFileDialog.getSaveFileName(None,"Salva SVG", "", ".SVG")
+#f=open(filename[0],"w")
+#f.write(output_svg)
+#f.close()
