@@ -8,7 +8,7 @@
 #                                                                                                                         
 ######################################################
 
-
+from importlib import reload
 import math
 import g2
 import makEasy
@@ -78,9 +78,12 @@ def unBend(st,id_curve):
             angle=-branch.Angle
             for o in switch_list['after']:
                 print (o)
-                obj=Part.Shape(OGG.Faces[o])
+                #obj=Part.Shape(OGG.Faces[o])
+                obj=st.Branches[o].ShapeUp
                 obj.Placement=rotateObj(obj,axis,pof,angle)
-                Part.show(obj)
+                obj=st.Branches[o].ShapeDown
+                obj.Placement=rotateObj(obj,axis,pof,angle)
+                #Part.show(obj)
                        
         else: msg='not a curve!'
     else: msg='id not avaible!'
@@ -115,18 +118,19 @@ Gui.ActiveDocument=doc
 for b in sheet_tree.Branches:
     bb=sheet_tree.Branches[b]
     if bb.Class=='Plane':
-        f_up=OGG.Faces[bb.FaceUp].copy()
-        f_down=OGG.Faces[bb.FaceDown].copy()
-        Part.show(f_up)
-        Part.show(f_down)
-        #OGG.Faces[bb.FaceUp]=f_up
-        #OGG.Faces[bb.FaceDown]=f_down
+        #f_up=OGG.Faces[bb.FaceUp].copy()
+        #f_down=OGG.Faces[bb.FaceDown].copy()
+        feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceUp))
+        feat.Shape=bb.ShapeUp
+        feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceDown))
+        feat.Shape=bb.ShapeDown
     if bb.Class=='Cylinder':
        p1=bb.PointOfRotation
        p2=p1+bb.Axis
        l = Part.LineSegment(p1,p2)
-       shape = l.toShape()
-       Part.show(shape)
+
+       feat = doc.addObject("Part::Feature","BendAxis_"+str(bb.FaceUp))
+       feat.Shape= l.toShape()
        ids = list(bb.Joints.keys()) 
        print (ids)
        j1=bb.Joints[ids[0]]
@@ -144,6 +148,7 @@ pp.pprint(toDict(sheet_tree))
 Gui.SendMsgToActiveView("ViewFit")
 
 unBend(sheet_tree,5)
-unBend(sheet_tree,14)
+doc.recompute()
+#unBend(sheet_tree,14)
 
 
