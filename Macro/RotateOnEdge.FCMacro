@@ -13,4 +13,4 @@ asse=Vector(v[0].X-v[1].X,v[0].Y-v[1].Y,v[0].Z-v[1].Z).normalize()
 print (asse)
 obj=sel.Object
 #obj.Placement=Placement(Vector(0,0,0), Rotation(asse,10.0),v[0].Point).multiply(obj.Placement)
-obj.Placement=rotateObj(obj,asse,v[0].Point,45):
+obj.Placement=rotateObj(obj,asse,v[0].Point,45)

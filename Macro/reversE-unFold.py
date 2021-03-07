@@ -1,11 +1,11 @@
 ######################################################
-#                                                                                                                             
-#  Riccardo Soldini - riccardo.soldini@gmail.com                                                      
-#                                                                                                                           
-#  unFold.py - 2020                                                                                               
-#                                                                                                                          
-#  Modulo per la decostruzione di parti di carpenteria piegate                                  
-#                                                                                                                         
+#
+#  Riccardo Soldini - riccardo.soldini@gmail.com
+#
+#  unFold.py - 2020
+#
+#  Modulo per la decostruzione di parti di carpenteria piegate
+#
 ######################################################
 
 from importlib import reload
@@ -24,7 +24,7 @@ def rotateObj(obj,axis,rotationPoint,angle):
     return Placement(FC.Vector(0,0,0), Rotation(axis,angle),rotationPoint).multiply(obj.Placement)
 
 def toDict(ts):
-    result={} 
+    result={}
     for b in ts.Branches:
         vals={}
         branch=ts.Branches[b]
@@ -32,13 +32,13 @@ def toDict(ts):
         vals['Angle']=branch.Angle
         vals['Axis']=branch.Axis
         vals['FaceUp']=branch.FaceUp
-        vals['FaceDown']=branch.FaceDown      
+        vals['FaceDown']=branch.FaceDown
         vals['Joints']=[]
         jj=list(branch.Joints)
-        for j in jj: 
+        for j in jj:
              vals['Joints'].append(branch.Joints[j].ToBranch.FaceUp)
         result[b]=vals
-    return result 
+    return result
 
 def linkedBranches(st,branch_id,id,b_list):
     branch=st.Branches[branch_id]
@@ -52,11 +52,12 @@ def linkedBranches(st,branch_id,id,b_list):
             linkedBranches(st,look,branch_id,b_list)
     return b_list
 
-def unBend(st,id_curve):
+def unBend(st,id_curve,angle=0.0):
     '''
     input:
-         - st = sheetTree
+     - st = sheetTree
 	 - id_curve = face id of curve to unbend
+     - angle = angle selected or plane it
     '''
     msg=''
     if id_curve in st.Branches:
@@ -72,19 +73,19 @@ def unBend(st,id_curve):
             switch_list['before']+=linkedBranches(st,before_id,id_curve,[])
             switch_list['after']+=linkedBranches(st,after_id,id_curve,[])
             print(switch_list)
-            
+
             axis=branch.Axis
             pof=branch.PointOfRotation
-            angle=-branch.Angle
+            if angle==0.0:
+               angle=-branch.Angle
             for o in switch_list['after']:
-                print (o)
-                #obj=Part.Shape(OGG.Faces[o])
-                obj=st.Branches[o].ShapeUp
+                obj=st.Branches[o].PartFeatureUp
+                print ('obj:',obj)
+                print('placement:',obj.Placement)
                 obj.Placement=rotateObj(obj,axis,pof,angle)
-                obj=st.Branches[o].ShapeDown
+                obj=st.Branches[o].PartFeatureDown
                 obj.Placement=rotateObj(obj,axis,pof,angle)
-                #Part.show(obj)
-                       
+
         else: msg='not a curve!'
     else: msg='id not avaible!'
     return msg
@@ -99,6 +100,7 @@ OGG=FCObject(obj)
 OGG.parse()
 OGG._getThickness()
 OGG._getAnyBends()
+
 
 sheet_tree=FCTreeSheet(OGG)
 
@@ -122,8 +124,10 @@ for b in sheet_tree.Branches:
         #f_down=OGG.Faces[bb.FaceDown].copy()
         feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceUp))
         feat.Shape=bb.ShapeUp
+        bb.PartFeatureUp=feat
         feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceDown))
         feat.Shape=bb.ShapeDown
+        bb.PartFeatureDown=feat
     if bb.Class=='Cylinder':
        p1=bb.PointOfRotation
        p2=p1+bb.Axis
@@ -131,7 +135,8 @@ for b in sheet_tree.Branches:
 
        feat = doc.addObject("Part::Feature","BendAxis_"+str(bb.FaceUp))
        feat.Shape= l.toShape()
-       ids = list(bb.Joints.keys()) 
+       bb.PartFeatureBendAxis=feat
+       ids = list(bb.Joints.keys())
        print (ids)
        j1=bb.Joints[ids[0]]
        j2=bb.Joints[ids[1]]
@@ -141,14 +146,13 @@ for b in sheet_tree.Branches:
        vns1 = face1.normalAt(0,0)
        vns2 = face2.normalAt(0,0)
        alpha = math.degrees( vns1.getAngle( vns2 ) )
-       print ('angle of bend:',alpha)   
+       print ('angle of bend:',alpha)
        #f_up.Placement=rotateObj(f_up,bb.Axis,p1,90.0)
- 
-pp.pprint(toDict(sheet_tree))     
+
+pp.pprint(toDict(sheet_tree))
+Gui.SendMsgToActiveView("ViewFront")
 Gui.SendMsgToActiveView("ViewFit")
 
-unBend(sheet_tree,5)
+#unBend(sheet_tree,5,10)
 doc.recompute()
 #unBend(sheet_tree,14)
-
-
