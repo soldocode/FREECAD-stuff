@@ -1,0 +1,49 @@
+import math
+
+
+def planeFrom3Points(p1,p2,p3):
+
+    M=[float(p2.X-p1.X),float(p2.Y-p1.Y),float(p2.Z-p1.Z),
+       float(p3.X-p1.X),float(p3.Y-p1.Y),float(p3.Z-p1.Z)]
+
+    K=[M[1]*M[5]-M[2]*M[4],
+       M[2]*M[3]-M[0]*M[5],
+       M[0]*M[4]-M[1]*M[3]]
+
+    P=[K[0],K[1],K[2],-(K[0]*p1.X+K[1]*p1.Y+K[2]*p1.Z)]
+
+    return P
+
+
+sels=Gui.Selection.getSelectionEx()
+
+if len(sels)==1:
+    s1=sels[0].SubObjects[0]
+    s2=sels[0].SubObjects[1]
+elif len(sels)==2:
+    s1=sels[0].SubObjects[0]
+    s2=sels[1].SubObjects[0]
+
+
+v1=s1.Vertexes[0:3]
+v2=s2.Vertexes[0:3]
+
+p1=planeFrom3Points(v1[0],v1[1],v1[2])
+p2=planeFrom3Points(v2[0],v2[1],v2[2])
+
+
+a1=p1[0]
+b1=p1[1]
+c1=p1[2]
+a2=p2[0]
+b2=p2[1]
+c2=p2[2]
+
+
+d = ( a1 * a2 + b1 * b2 + c1 * c2 )
+e1 = a1 * a1 + b1 * b1 + c1 * c1
+e2 = a2 * a2 + b2 * b2 + c2 * c2
+d = d / (math.sqrt(e1) * math.sqrt(e2))
+print (d,e1,e2)
+A = math.degrees(math.acos(d))
+print("Angle is", A, "degree")

@@ -79,12 +79,20 @@ def unBend(st,id_curve,angle=0.0):
             if angle==0.0:
                angle=-branch.Angle
             for o in switch_list['after']:
-                obj=st.Branches[o].PartFeatureUp
-                print ('obj:',obj)
-                print('placement:',obj.Placement)
-                obj.Placement=rotateObj(obj,axis,pof,angle)
-                obj=st.Branches[o].PartFeatureDown
-                obj.Placement=rotateObj(obj,axis,pof,angle)
+                print('Branch nr ',o)
+                if st.Branches[o].Class=="Plane":
+                    obj=st.Branches[o].PartFeatureUp
+                    print ('obj:',obj)
+                    print('placement:',obj.Placement)
+                    obj.Placement=rotateObj(obj,axis,pof,angle)
+                    obj=st.Branches[o].PartFeatureDown
+                    obj.Placement=rotateObj(obj,axis,pof,angle)
+                elif st.Branches[o].Class=="Cylinder":
+                    obj=st.Branches[o].PartFeatureBendAxis
+                    print ('obj:',obj)
+                    print('placement:',obj.Placement)
+                    obj.Placement=rotateObj(obj,axis,pof,angle)
+
 
         else: msg='not a curve!'
     else: msg='id not avaible!'
@@ -120,8 +128,6 @@ Gui.ActiveDocument=doc
 for b in sheet_tree.Branches:
     bb=sheet_tree.Branches[b]
     if bb.Class=='Plane':
-        #f_up=OGG.Faces[bb.FaceUp].copy()
-        #f_down=OGG.Faces[bb.FaceDown].copy()
         feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceUp))
         feat.Shape=bb.ShapeUp
         bb.PartFeatureUp=feat
@@ -145,14 +151,13 @@ for b in sheet_tree.Branches:
        face2=OGG.Faces[j2.JoinUp[1]]
        vns1 = face1.normalAt(0,0)
        vns2 = face2.normalAt(0,0)
-       alpha = math.degrees( vns1.getAngle( vns2 ) )
+       alpha = math.degrees( vns2.getAngle( vns1 ) )
        print ('angle of bend:',alpha)
-       #f_up.Placement=rotateObj(f_up,bb.Axis,p1,90.0)
+
 
 pp.pprint(toDict(sheet_tree))
 Gui.SendMsgToActiveView("ViewFront")
 Gui.SendMsgToActiveView("ViewFit")
 
-#unBend(sheet_tree,5,10)
-doc.recompute()
-#unBend(sheet_tree,14)
+unBend(sheet_tree,5,45)
+unBend(sheet_tree,14,-90)
