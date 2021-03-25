@@ -151,13 +151,20 @@ for b in sheet_tree.Branches:
        face2=OGG.Faces[j2.JoinUp[1]]
        vns1 = face1.normalAt(0,0)
        vns2 = face2.normalAt(0,0)
-       alpha = math.degrees( vns2.getAngle( vns1 ) )
-       print ('angle of bend:',alpha)
+       ref=FreeCAD.Vector( 0,0,1)
+       a1=ref.getAngle( vns1)
+       a2=ref.getAngle( vns2)
+       bb.Angle = math.degrees( a2-a1)
+       
 
 
 pp.pprint(toDict(sheet_tree))
 Gui.SendMsgToActiveView("ViewFront")
 Gui.SendMsgToActiveView("ViewFit")
 
-unBend(sheet_tree,5,45)
-unBend(sheet_tree,14,-90)
+
+for b in sheet_tree.Branches:
+    print (sheet_tree.Branches[b].Class)
+    if sheet_tree.Branches[b].Class=="Cylinder":
+        unBend(sheet_tree,b,sheet_tree.Branches[b].Angle)
+
