@@ -20,6 +20,41 @@ import FreeCAD as FC
 import Part
 
 
+def createFCSheetDocument(sheetTree):
+    doc=FC.newDocument()
+    Gui.ActiveDocument=doc
+    for b in sheetTree.Branches:
+        bb=sheetTree.Branches[b]
+        if bb.Class=='Plane':
+            feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceUp))
+            feat.Shape=bb.ShapeUp
+            bb.PartFeatureUp=feat
+            feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceDown))
+            feat.Shape=bb.ShapeDown
+            bb.PartFeatureDown=feat
+        if bb.Class=='Cylinder':
+           p1=bb.PointOfRotation
+           p2=p1+bb.Axis
+           l = Part.LineSegment(p1,p2)
+
+           feat = doc.addObject("Part::Feature","BendAxis_"+str(bb.FaceUp))
+           feat.Shape= l.toShape()
+           bb.PartFeatureBendAxis=feat
+           ids = list(bb.Joints.keys())
+           print (ids)
+           j1=bb.Joints[ids[0]]
+           j2=bb.Joints[ids[1]]
+           print (ids[0],ids[1])
+           face1=OGG.Faces[j1.JoinUp[1]]
+           face2=OGG.Faces[j2.JoinUp[1]]
+           vns1 = face1.normalAt(0,0)
+           vns2 = face2.normalAt(0,0)
+           bb.Angle = math.degrees(vns1.getAngle(vns2))
+    doc.recompute()
+    Gui.SendMsgToActiveView("ViewFront")
+    Gui.SendMsgToActiveView("ViewFit")
+    return doc
+
 def rotateObj(obj,axis,rotationPoint,angle):
     return Placement(FC.Vector(0,0,0), Rotation(axis,angle),rotationPoint).multiply(obj.Placement)
 
@@ -84,6 +119,9 @@ def unBend(st,id_curve,angle=0.0):
                     obj=st.Branches[o].PartFeatureUp
                     print ('obj:',obj)
                     print('placement:',obj.Placement)
+                    if axis.x+axis.y+axis.z<0:
+                        angle=-angle
+                    print('axis',axis.x+axis.y+axis.z)
                     obj.Placement=rotateObj(obj,axis,pof,angle)
                     obj=st.Branches[o].PartFeatureDown
                     obj.Placement=rotateObj(obj,axis,pof,angle)
@@ -109,6 +147,7 @@ OGG.parse()
 OGG._getThickness()
 OGG._getAnyBends()
 
+#if sheet_tree: del sheet_tree
 
 sheet_tree=FCTreeSheet(OGG)
 
@@ -123,48 +162,9 @@ for b in sheet_tree.Branches:
         print(bb.Radius,bb.Axis,bb.PointOfRotation)
 
 
-doc=FC.newDocument()
-Gui.ActiveDocument=doc
-for b in sheet_tree.Branches:
-    bb=sheet_tree.Branches[b]
-    if bb.Class=='Plane':
-        feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceUp))
-        feat.Shape=bb.ShapeUp
-        bb.PartFeatureUp=feat
-        feat = doc.addObject("Part::Feature","Face_"+str(bb.FaceDown))
-        feat.Shape=bb.ShapeDown
-        bb.PartFeatureDown=feat
-    if bb.Class=='Cylinder':
-       p1=bb.PointOfRotation
-       p2=p1+bb.Axis
-       l = Part.LineSegment(p1,p2)
-
-       feat = doc.addObject("Part::Feature","BendAxis_"+str(bb.FaceUp))
-       feat.Shape= l.toShape()
-       bb.PartFeatureBendAxis=feat
-       ids = list(bb.Joints.keys())
-       print (ids)
-       j1=bb.Joints[ids[0]]
-       j2=bb.Joints[ids[1]]
-       print (ids[0],ids[1])
-       face1=OGG.Faces[j1.JoinUp[1]]
-       face2=OGG.Faces[j2.JoinUp[1]]
-       vns1 = face1.normalAt(0,0)
-       vns2 = face2.normalAt(0,0)
-       ref=FreeCAD.Vector( 0,0,1)
-       a1=ref.getAngle( vns1)
-       a2=ref.getAngle( vns2)
-       bb.Angle = math.degrees( a2-a1)
-       
-
-
-pp.pprint(toDict(sheet_tree))
-Gui.SendMsgToActiveView("ViewFront")
-Gui.SendMsgToActiveView("ViewFit")
-
+createFCSheetDocument(sheet_tree)
 
 for b in sheet_tree.Branches:
     print (sheet_tree.Branches[b].Class)
     if sheet_tree.Branches[b].Class=="Cylinder":
         unBend(sheet_tree,b,sheet_tree.Branches[b].Angle)
-
