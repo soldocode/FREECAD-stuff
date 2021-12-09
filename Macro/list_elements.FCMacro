@@ -1,9 +1,26 @@
 count=0
 weight=0
+
 for obj in FreeCAD.ActiveDocument.Objects:
-    if hasattr(obj,"Shape"):
+    if  str(type(obj))=="<class 'Part.Feature'>":
+        obj.ViewObject.Transparency=100
+
+
+for obj in FreeCAD.ActiveDocument.Objects:
+    if  str(type(obj))=="<class 'Part.Feature'>":
         print ("Object ", obj.Label)
         count+=1
+        color=obj.ViewObject.ShapeColor
         weight+=round(obj.Shape.Volume*0.0000079,1)
+        obj.ViewObject.Transparency=0
+        obj.ViewObject.ShapeColor=(0.8,0.8,0.0)
+        x = input('press to continue...')
+        obj.ViewObject.Transparency=100
+        obj.ViewObject.ShapeColor=color
+
 print ('Rilevati nr ',count,' oggetti')
 print('Peso totale: ',weight,' kg')
+
+for obj in FreeCAD.ActiveDocument.Objects:
+    if  str(type(obj))=="<class 'Part.Feature'>":
+        obj.ViewObject.Transparency=0

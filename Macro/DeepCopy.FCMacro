@@ -3,12 +3,16 @@ import FreeCAD as FC
 
 sels=Gui.Selection.getSelectionEx()
 doc=FC.newDocument()
+
+print ('Starting raw copy....')
 for sel in sels:
-     if hasattr(sel.Object,"Shape"):
+     if "Shape" in sel.Object.PropertiesList:
         gp=sel.Object.getGlobalPlacement()
-        #print (sel.Object.Label,'-->',sel.Object.getGlobalPlacement())
+        print ('...found ',sel.Object.Label)
         copied=doc.copyObject(sel.Object,True)
         copied.Placement=gp
        
 Gui.ActiveDocument=doc
 Gui.SendMsgToActiveView("ViewFit")
+
+print ('..... finished.')
