@@ -19,7 +19,15 @@ from PySide import QtGui
 import FreeCAD as FC
 import Part
 
+def angleBetweenFaces(f1,f2):
+    vns1 = f1.normalAt(0,0)
+    vns2 = f2.normalAt(0,0)
+    ref=Vector( 0,0,1)
+    a1=ref.getAngle( vns1)
+    a2=ref.getAngle( vns2)
+    return math.degrees( a1-a2)
 
+print ('angle between faces:',alpha)
 def createFCSheetDocument(sheetTree):
     doc=FC.newDocument()
     Gui.ActiveDocument=doc
@@ -47,9 +55,11 @@ def createFCSheetDocument(sheetTree):
            print (ids[0],ids[1])
            face1=OGG.Faces[j1.JoinUp[1]]
            face2=OGG.Faces[j2.JoinUp[1]]
-           vns1 = face1.normalAt(0,0)
-           vns2 = face2.normalAt(0,0)
-           bb.Angle = math.degrees(vns1.getAngle(vns2))
+           #vns1 = face1.normalAt(0,0)
+           #vns2 = face2.normalAt(0,0)
+           #print('????',vns1.getAngle(vns2))
+           #bb.Angle = math.degrees(vns1.getAngle(vns2))
+           bb.Angle=angleBetweenFaces(face1,face2)
     doc.recompute()
     Gui.SendMsgToActiveView("ViewFront")
     Gui.SendMsgToActiveView("ViewFit")
@@ -77,13 +87,13 @@ def toDict(ts):
 
 def linkedBranches(st,branch_id,id,b_list):
     branch=st.Branches[branch_id]
-    print(branch,id)
+    #print(branch,id)
     jj=list(branch.Joints)
     for j in jj:
         look=branch.Joints[j].ToBranch.FaceUp
         if id!=look:
             if look not in b_list:b_list.append(look)
-            print(look)
+            #print(look)
             linkedBranches(st,look,branch_id,b_list)
     return b_list
 
@@ -107,21 +117,22 @@ def unBend(st,id_curve,angle=0.0):
             switch_list['after'].append(after_id)
             switch_list['before']+=linkedBranches(st,before_id,id_curve,[])
             switch_list['after']+=linkedBranches(st,after_id,id_curve,[])
+            print('SWITCH LIST:')
             print(switch_list)
 
             axis=branch.Axis
             pof=branch.PointOfRotation
             if angle==0.0:
                angle=-branch.Angle
+            print('angle:',angle)
+            #if axis.x*axis.y*axis.z<0:
+            #    angle=-angle
             for o in switch_list['after']:
                 print('Branch nr ',o)
                 if st.Branches[o].Class=="Plane":
                     obj=st.Branches[o].PartFeatureUp
                     print ('obj:',obj)
                     print('placement:',obj.Placement)
-                    if axis.x+axis.y+axis.z<0:
-                        angle=-angle
-                    print('axis',axis.x+axis.y+axis.z)
                     obj.Placement=rotateObj(obj,axis,pof,angle)
                     obj=st.Branches[o].PartFeatureDown
                     obj.Placement=rotateObj(obj,axis,pof,angle)
@@ -130,6 +141,9 @@ def unBend(st,id_curve,angle=0.0):
                     print ('obj:',obj)
                     print('placement:',obj.Placement)
                     obj.Placement=rotateObj(obj,axis,pof,angle)
+                    #print ('pof',st.Branches[o].PointOfRotation)
+                    #print ('bendaxis',st.Branches[o].PartFeatureBendAxis.Shape.CenterOfMass)
+                    st.Branches[o].PointOfRotation=st.Branches[o].PartFeatureBendAxis.Shape.CenterOfMass
 
 
         else: msg='not a curve!'
@@ -167,4 +181,7 @@ createFCSheetDocument(sheet_tree)
 for b in sheet_tree.Branches:
     print (sheet_tree.Branches[b].Class)
     if sheet_tree.Branches[b].Class=="Cylinder":
-        unBend(sheet_tree,b,sheet_tree.Branches[b].Angle)
+        print('bend:',b)
+        #if axis.x+axis.y+axis.z<0:
+        #    angle=-angle
+        unBend(sheet_tree,b)
