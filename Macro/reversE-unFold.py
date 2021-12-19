@@ -22,12 +22,13 @@ import Part
 def angleBetweenFaces(f1,f2):
     vns1 = f1.normalAt(0,0)
     vns2 = f2.normalAt(0,0)
-    ref=Vector( 0,0,1)
-    a1=ref.getAngle( vns1)
-    a2=ref.getAngle( vns2)
-    return math.degrees( a1-a2)
+    #ref=FC.Vector( 0,0,1)
+    #a1=math.degrees(ref.getAngle( vns1))
+    #a2=math.degrees(ref.getAngle( vns2))
+    #return  a1-a2
+    return math.degrees(vns1.getAngle(vns2))
 
-print ('angle between faces:',alpha)
+
 def createFCSheetDocument(sheetTree):
     doc=FC.newDocument()
     Gui.ActiveDocument=doc
@@ -104,6 +105,8 @@ def unBend(st,id_curve,angle=0.0):
 	 - id_curve = face id of curve to unbend
      - angle = angle selected or plane it
     '''
+    print()
+    print('Start unBend function!!!!!')
     msg=''
     if id_curve in st.Branches:
         if st.Branches[id_curve].Class=="Cylinder":
@@ -120,17 +123,24 @@ def unBend(st,id_curve,angle=0.0):
             print('SWITCH LIST:')
             print(switch_list)
 
+            
+            j_up=branch.Joints[jj[1]].JoinUp
+            j_wire=st.FCObject.Faces[j_up[1]].OuterWire
+            je=j_wire.Edges[j_up[2]]
+            for e in j_wire.Edges:
+                 print(e.Vertexes[0].X,e.Vertexes[0].Y,e.Vertexes[0].Z)            
+
             axis=branch.Axis
+            print('assi???:', je.Curve.Direction,axis)
+       
             pof=branch.PointOfRotation
             if angle==0.0:
                angle=-branch.Angle
             print('angle:',angle)
-            #if axis.x*axis.y*axis.z<0:
-            #    angle=-angle
             for o in switch_list['after']:
                 print('Branch nr ',o)
                 if st.Branches[o].Class=="Plane":
-                    obj=st.Branches[o].PartFeatureUp
+                    obj=st.Branches[o].PartFeatureUp 
                     print ('obj:',obj)
                     print('placement:',obj.Placement)
                     obj.Placement=rotateObj(obj,axis,pof,angle)
@@ -179,9 +189,9 @@ for b in sheet_tree.Branches:
 createFCSheetDocument(sheet_tree)
 
 for b in sheet_tree.Branches:
-    print (sheet_tree.Branches[b].Class)
+    #print (sheet_tree.Branches[b].Class)
     if sheet_tree.Branches[b].Class=="Cylinder":
         print('bend:',b)
         #if axis.x+axis.y+axis.z<0:
         #    angle=-angle
-        unBend(sheet_tree,b)
+        #unBend(sheet_tree,b)
