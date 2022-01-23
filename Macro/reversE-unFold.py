@@ -76,7 +76,7 @@ def toDict(ts):
         branch=ts.Branches[b]
         vals['Class']=branch.Class
         vals['Angle']=branch.Angle
-        vals['Axis']=branch.Axis
+        vals['Axis']=str(branch.Axis)
         vals['FaceUp']=branch.FaceUp
         vals['FaceDown']=branch.FaceDown
         vals['Joints']=[]
@@ -85,6 +85,10 @@ def toDict(ts):
              vals['Joints'].append(branch.Joints[j].ToBranch.FaceUp)
         result[b]=vals
     return result
+
+def toJson(ts):
+    return(json.dumps(toDict(ts), indent=4))
+
 
 def linkedBranches(st,branch_id,id,b_list):
     branch=st.Branches[branch_id]
@@ -97,6 +101,94 @@ def linkedBranches(st,branch_id,id,b_list):
             #print(look)
             linkedBranches(st,look,branch_id,b_list)
     return b_list
+
+
+
+def vectorToXYZAxisDegrees(v):
+    '''
+    return [angle to XY plane,
+            angle to XZ plane,
+            angle to YZ plane]
+    '''
+    result={'X':0,'Y':0,'Z':0}
+    if abs(v.x)==1.0:
+        result={'X':0,'Y':90.0*1/v.x,'Z':90.0*1/v.x}
+    elif abs(v.y)==1.0:
+        result={'X':90.0*1/v.y,'Y':0,'Z':90.0*1/v.y}
+    elif abs(v.z)==1.0:
+        result={'X':90.0*1/v.z,'Y':90.0*1/v.z,'Z':0}
+    else:
+        vns1 = FreeCAD.Vector(1,0,0)
+        vns2 = FreeCAD.Vector(v.x,0,v.z).normalize()
+        result['X'] = math.degrees( vns1.getAngle( vns2 ))
+        vns1 = FreeCAD.Vector(0,1,0)
+        vns2 = FreeCAD.Vector(v.x,v.y,0).normalize()
+        result['Y'] = math.degrees( vns1.getAngle( vns2 ))
+        vns1 = FreeCAD.Vector(0,0,1)
+        vns2 = FreeCAD.Vector(0,v.y,v.z).normalize()
+        result['Z'] = math.degrees( vns1.getAngle( vns2 ))
+    print (result)
+
+    return result
+
+
+
+
+def splitTree(st,id_curve):
+    tree={'root':id_curve,'before':[],'after':[]}
+    if id_curve in st.Branches:
+        branch=st.Branches[id_curve]
+        jj=list(branch.Joints)
+        before_id=branch.Joints[jj[0]].ToBranch.FaceUp
+        after_id=branch.Joints[jj[1]].ToBranch.FaceUp
+        tree['before'].append(before_id)
+        tree['after'].append(after_id)
+        tree['before']+=linkedBranches(st,before_id,id_curve,[])
+        tree['after']+=linkedBranches(st,after_id,id_curve,[])
+        print('SPLITED TREE:',tree)
+    return tree
+
+
+def alignBendToX(st,id_curve):
+    '''
+    align bend to X axis
+    '''
+    print ('Start alignBendToX function...')
+    if id_curve in st.Branches:
+        if st.Branches[id_curve].Class=="Cylinder":
+            branch=st.Branches[id_curve]
+            pof=branch.PointOfRotation
+            axis=branch.Axis
+            jj=list(branch.Joints)
+            f1=st.FCObject.Faces[branch.Joints[jj[0]].ToBranch.FaceUp]
+            f2=st.FCObject.Faces[branch.Joints[jj[1]].ToBranch.FaceUp]
+            #print('...faces joint:',faces)
+            print('...bend vector:',list(branch.Axis))
+            print('...face1 normal:',
+                  f1.normalAt(0,0))
+            vectorToXYZAxisDegrees(f1.normalAt(0,0))
+            print('...face2 normal:',
+                  f2.normalAt(0,0))
+            vectorToXYZAxisDegrees(f2.normalAt(0,0))
+            branches=list(st.Branches)
+            for b in branches:
+                print('Branch nr ',b)
+                if st.Branches[b].Class=="Plane":
+                    obj=st.Branches[b].PartFeatureUp
+                    print ('obj:',obj)
+                    print('placement:',obj.Placement)
+                    z_axis = FreeCAD.Vector(0,0,1)
+                    y_axis = FreeCAD.Vector(0,1,0)
+                    d=vectorToXYZAxisDegrees(axis)
+                    obj.Placement=rotateObj(obj,z_axis,pof,d['Z'])
+                    obj.Placement=rotateObj(obj,y_axis,pof,d['Y'])
+                    obj=st.Branches[b].PartFeatureDown
+                    obj.Placement=rotateObj(obj,z_axis,pof,d['Z'])
+                    obj.Placement=rotateObj(obj,y_axis,pof,d['Y'])
+
+
+    return
+
 
 def unBend(st,id_curve,angle=0.0):
     '''
@@ -123,16 +215,16 @@ def unBend(st,id_curve,angle=0.0):
             print('SWITCH LIST:')
             print(switch_list)
 
-            
+
             j_up=branch.Joints[jj[1]].JoinUp
             j_wire=st.FCObject.Faces[j_up[1]].OuterWire
             je=j_wire.Edges[j_up[2]]
             for e in j_wire.Edges:
-                 print(e.Vertexes[0].X,e.Vertexes[0].Y,e.Vertexes[0].Z)            
+                 print(e.Vertexes[0].X,e.Vertexes[0].Y,e.Vertexes[0].Z)
 
             axis=branch.Axis
             print('assi???:', je.Curve.Direction,axis)
-       
+
             pof=branch.PointOfRotation
             if angle==0.0:
                angle=-branch.Angle
@@ -140,7 +232,7 @@ def unBend(st,id_curve,angle=0.0):
             for o in switch_list['after']:
                 print('Branch nr ',o)
                 if st.Branches[o].Class=="Plane":
-                    obj=st.Branches[o].PartFeatureUp 
+                    obj=st.Branches[o].PartFeatureUp
                     print ('obj:',obj)
                     print('placement:',obj.Placement)
                     obj.Placement=rotateObj(obj,axis,pof,angle)
