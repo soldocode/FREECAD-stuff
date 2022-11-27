@@ -13,20 +13,37 @@ import math
 import g2
 import makEasy
 import json
-from MeFunctions import *
+#from MeFunctions import *
 from MeFreeCADClasses import *
 from PySide import QtGui
 import FreeCAD as FC
 import Part
 
+
 def angleBetweenFaces(f1,f2):
+    print ('angleBetweenFaces')
     vns1 = f1.normalAt(0,0)
+    print ('normale faccia ',f1,' : ',vns1)
     vns2 = f2.normalAt(0,0)
-    #ref=FC.Vector( 0,0,1)
-    #a1=math.degrees(ref.getAngle( vns1))
-    #a2=math.degrees(ref.getAngle( vns2))
-    #return  a1-a2
-    return math.degrees(vns1.getAngle(vns2))
+    print ('normale faccia ' ,f2,' : ',vns2)
+    
+    print('vns1',vns1)
+    p1=p2=pzero=g2.Point(0,0)  
+    if round(vns1.x,5) == round(vns2.x,5):
+        p1=g2.Point(vns1.y,vns1.z)
+        p2=g2.Point(vns2.y,vns2.z)
+    elif round(vns1.y,5) == round(vns2.y,5):
+        p1=g2.Point(vns1.x,vns1.z)
+        p2=g2.Point(vns2.x,vns2.z)
+    elif round(vns1.z,5) == round(vns2.z,5):
+        p1=g2.Point(vns1.x,vns1.y)
+        p2=g2.Point(vns2.x,vns2.y)    
+
+    v2=g2.VectorFromTwoPoints(pzero,p2)
+    v1=g2.VectorFromTwoPoints(pzero,p1)
+    print (v1,' versus ',v2)
+    print(v2.angle.get_diff_to(v1.angle,1).deg)
+    return v2.angle.get_diff_to(v1.angle,-1).deg
 
 
 def createFCSheetDocument(sheetTree):
@@ -50,7 +67,7 @@ def createFCSheetDocument(sheetTree):
            feat.Shape= l.toShape()
            bb.PartFeatureBendAxis=feat
            ids = list(bb.Joints.keys())
-           print (ids)
+           print ('ids',ids)
            j1=bb.Joints[ids[0]]
            j2=bb.Joints[ids[1]]
            print (ids[0],ids[1])
@@ -60,6 +77,7 @@ def createFCSheetDocument(sheetTree):
            #vns2 = face2.normalAt(0,0)
            #print('????',vns1.getAngle(vns2))
            #bb.Angle = math.degrees(vns1.getAngle(vns2))
+           print('calcolo angolo tra le facce ',j1.JoinUp[1],' e ',j2.JoinUp[1])
            bb.Angle=angleBetweenFaces(face1,face2)
     doc.recompute()
     Gui.SendMsgToActiveView("ViewFront")
@@ -284,6 +302,7 @@ for b in sheet_tree.Branches:
     #print (sheet_tree.Branches[b].Class)
     if sheet_tree.Branches[b].Class=="Cylinder":
         print('bend:',b)
+        print(sheet_tree.Branches[b])
         #if axis.x+axis.y+axis.z<0:
         #    angle=-angle
-        #unBend(sheet_tree,b)
+        unBend(sheet_tree,b)
